@@ -1,0 +1,110 @@
+@import "tailwindcss";
+@import "@fontsource/inter";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/cal-sans";
+@import "tw-animate-css";
+
+:root {
+  --background: 0 0% 98.8%;
+  --surface: 240 20% 97%;
+  --foreground: 0 0% 7.8%;
+  --secondary-text: 0 0% 46%;
+  --muted: 220 14% 95%;
+  --border: 210 3.5% 88.6%;
+  --primary: 250 79.3% 60.2%;
+  --primary-tint: 255 100% 92%;
+  --success: 160 78% 34%;
+}
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-surface: hsl(var(--surface));
+  --color-foreground: hsl(var(--foreground));
+  --color-secondary-text: hsl(var(--secondary-text));
+  --color-muted: hsl(var(--muted));
+  --color-border: hsl(var(--border));
+  --color-primary: hsl(var(--primary));
+  --color-primary-tint: hsl(var(--primary-tint));
+  --color-success: hsl(var(--success));
+  --font-sans: "Inter", sans-serif;
+  --font-headline: "Cal Sans", "Inter", sans-serif;
+}
+
+/* Base Settings */
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: "Inter", sans-serif;
+  margin: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Lenis smooth scroll */
+html.lenis {
+  height: auto;
+}
+.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Flat bordered card */
+.card-panel {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card-panel:hover {
+  border-color: hsl(var(--primary) / 0.35);
+  box-shadow: 0 4px 20px 0 rgba(20, 20, 20, 0.05);
+}
+
+/* Pill buttons */
+.btn-primary {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  border-radius: 9999px;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.btn-primary:hover {
+  background: hsl(var(--foreground) / 0.85);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 9999px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.btn-secondary:hover {
+  border-color: hsl(var(--foreground) / 0.4);
+  background: hsl(var(--muted));
+}
+
+/* Infinite Marquee */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.marquee-container:hover .animate-marquee {
+  animation-play-state: paused;
+}
