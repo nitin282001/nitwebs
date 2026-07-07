@@ -62,7 +62,9 @@
       "Bash(npm run *)",
       "Bash(rmdir src/components)",
       "Bash(taskkill //PID 23628 //F)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e \"const p = require\\('./node_modules/three/package.json'\\); console.log\\('types field:', p.types || p.typings || 'none'\\); console.log\\('has build/three.core.d.ts:', require\\('fs'\\).existsSync\\('./node_modules/three/build/three.core.d.ts'\\)\\);\")"
     ]
   }
 }
