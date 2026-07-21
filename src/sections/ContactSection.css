@@ -1,0 +1,48 @@
+/* Restyles react-phone-number-input to look like one continuous glass input,
+   matching the other fields in this form, instead of its plain default look. */
+.nw-phone-input {
+  --PhoneInput-color--focus: hsl(var(--primary-tint));
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.nw-phone-input:focus-within {
+  border-color: rgba(224, 204, 250, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nw-phone-input.nw-phone-input--error {
+  border-color: rgba(248, 113, 113, 0.9);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.nw-phone-input .PhoneInputInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 0.875rem;
+  padding: 0;
+  min-width: 0;
+}
+
+.nw-phone-input .PhoneInputInput::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.nw-phone-input .PhoneInputCountry {
+  margin-right: 0.25rem;
+}
+
+.nw-phone-input .PhoneInputCountrySelectArrow {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+}

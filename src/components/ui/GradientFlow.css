@@ -1,0 +1,61 @@
+.gradient-flow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.gradient-flow__blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.75;
+  will-change: transform;
+}
+
+.gradient-flow__blob--a {
+  width: 65%;
+  height: 65%;
+  left: -15%;
+  top: -15%;
+  background: radial-gradient(circle at 30% 30%, #a855f7, transparent 70%);
+  animation: gradient-flow-a 22s ease-in-out infinite;
+}
+
+.gradient-flow__blob--b {
+  width: 75%;
+  height: 75%;
+  right: -20%;
+  bottom: -20%;
+  background: radial-gradient(circle at 70% 70%, #7c3aed, transparent 70%);
+  animation: gradient-flow-b 28s ease-in-out infinite;
+}
+
+.gradient-flow__blob--c {
+  width: 55%;
+  height: 55%;
+  left: 20%;
+  bottom: -20%;
+  background: radial-gradient(circle at 50% 50%, #d946ef, transparent 70%);
+  animation: gradient-flow-c 34s ease-in-out infinite;
+}
+
+@keyframes gradient-flow-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(8%, 6%, 0) scale(1.15); }
+}
+
+@keyframes gradient-flow-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-6%, -8%, 0) scale(1.1); }
+}
+
+@keyframes gradient-flow-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(5%, -5%, 0) scale(1.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-flow__blob {
+    animation: none;
+  }
+}

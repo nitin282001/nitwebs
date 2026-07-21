@@ -1,0 +1,292 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { 
+  FaLinkedin, 
+  FaTwitter, 
+  FaXTwitter, 
+  FaGithub, 
+  FaInstagram, 
+  FaYoutube 
+} from "react-icons/fa6";
+import { 
+  ArrowRight,
+  Globe
+} from "lucide-react";
+import NitwebsLogo from "./NitwebsLogo";
+import GridDivider from "./GridDivider";
+
+interface FooterLink {
+  label: string;
+  href: string;
+}
+
+interface FooterColumn {
+  heading: string;
+  links: FooterLink[];
+}
+
+interface FooterSocialLink {
+  platform: string;
+  href: string;
+  icon: string;
+}
+
+interface FooterBottomLink {
+  label: string;
+  href: string;
+}
+
+interface FooterPlatform {
+  name: string;
+  imageUrl: string;
+  link: string;
+}
+
+interface FooterProps {
+  logoConfig?: { mode: string; text?: string; imageUrl?: string };
+}
+
+interface FooterData {
+  tagline: string;
+  columns: FooterColumn[];
+  social: FooterSocialLink[];
+  bottomLinks: FooterBottomLink[];
+  platforms: FooterPlatform[];
+  copyright: string;
+}
+
+const DEFAULT_FOOTER: FooterData = {
+  tagline: "Building software that builds businesses.",
+  columns: [
+    {
+      heading: "Services",
+      links: [
+        { label: "AI Engineering", href: "#services" },
+        { label: "Custom Software", href: "#services" },
+        { label: "Web & Mobile", href: "#services" },
+        { label: "Automation", href: "#services" }
+      ]
+    },
+    {
+      heading: "Company",
+      links: [
+        { label: "About Us", href: "#" },
+        { label: "Our Work", href: "#showcase" },
+        { label: "Process", href: "#process" },
+        { label: "Contact", href: "#contact" },
+        { label: "Careers", href: "/careers" }
+      ]
+    }
+  ],
+  social: [
+    { platform: "LinkedIn", href: "#", icon: "Linkedin" },
+    { platform: "Twitter",  href: "#", icon: "Twitter" }
+  ],
+  bottomLinks: [
+    { label: "Privacy Policy",  href: "#" },
+    { label: "Terms of Service", href: "#" }
+  ],
+  platforms: [],
+  copyright: `© ${new Date().getFullYear()} Nitwebs Inc. All rights reserved.`
+};
+
+const iconMap: Record<string, any> = {
+  linkedin: FaLinkedin,
+  twitter: FaTwitter,
+  xtwitter: FaXTwitter,
+  x: FaXTwitter,
+  github: FaGithub,
+  instagram: FaInstagram,
+  youtube: FaYoutube
+};
+
+export default function Footer({ logoConfig }: FooterProps) {
+  const [footerData, setFooterData] = useState<FooterData>(DEFAULT_FOOTER);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/footer")
+      .then((res) => {
+        if (!res.ok) throw new Error("Footer API offline");
+        return res.json();
+      })
+      .then((data) => {
+        // Only set state if we fetched valid data
+        if (data.columns && data.columns.length > 0) {
+          setFooterData(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("Footer API offline, using fallback static footer defaults:", err.message);
+      });
+  }, []);
+
+  const getSocialIcon = (iconName: string) => {
+    const key = iconName.toLowerCase();
+    return iconMap[key] || Globe;
+  };
+
+  const handleScrollToSection = (targetId: string) => {
+    const cleanId = targetId ? targetId.replace(/^#/, "") : "";
+    if (!cleanId) return;
+
+    if (cleanId === "hero" || cleanId === "home" || cleanId === "top") {
+      const heroEl = document.getElementById("hero");
+      if (heroEl) {
+        heroEl.scrollIntoView({ behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      window.history.pushState(null, "", "/#hero");
+      return;
+    }
+
+    const el = document.getElementById(cleanId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+      window.history.pushState(null, "", `/#${cleanId}`);
+    } else {
+      window.location.href = `/#${cleanId}`;
+    }
+  };
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      handleScrollToSection(href.substring(1));
+    } else if (href.startsWith("/")) {
+      e.preventDefault();
+      navigate(href);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <footer className="relative bg-surface/30">
+      <GridDivider />
+      
+      {/* Top multi-column section */}
+      <div className={`max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-12 ${footerData.platforms?.length > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+        
+        {/* Column 1: Logo & Tagline */}
+        <div className="lg:col-span-2 flex flex-col items-start gap-4">
+          <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+            <NitwebsLogo logoConfig={logoConfig} />
+          </Link>
+          <p className="text-secondary-text text-sm max-w-sm leading-relaxed mt-2">
+            {footerData.tagline}
+          </p>
+          
+          {/* Social Row */}
+          <div className="flex gap-3.5 mt-4">
+            {footerData.social.map((soc) => {
+              const Icon = getSocialIcon(soc.icon);
+              return (
+                <a 
+                  key={soc.platform} 
+                  href={soc.href} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-secondary-text hover:text-foreground hover:border-foreground transition-all duration-200"
+                  title={soc.platform}
+                >
+                  <Icon className="w-4.5 h-4.5" />
+                </a>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Dynamic content columns */}
+        {footerData.columns.map((col, cIdx) => (
+          <div key={cIdx} className="flex flex-col gap-4">
+            <span className="text-xs font-mono text-primary tracking-widest uppercase mb-1">
+              {col.heading}
+            </span>
+            <ul className="flex flex-col gap-3">
+              {col.links.map((link) => (
+                <li key={link.label}>
+                  <a 
+                    href={link.href} 
+                    onClick={(e) => handleLinkClick(e, link.href)}
+                    className="text-sm text-secondary-text hover:text-foreground transition-colors duration-200"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+
+        {/* Platform / listing badges — clean borderless logos stacked cleanly */}
+        {footerData.platforms && footerData.platforms.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <span className="text-xs font-mono text-primary tracking-widest uppercase mb-1">
+              As Featured On
+            </span>
+            <div className="flex flex-col gap-3.5">
+              {footerData.platforms.map((platform, idx) => {
+                const badge = (
+                  <div className="py-1 flex items-center justify-start transition-all duration-200 hover:scale-[1.02] origin-left">
+                    {platform.imageUrl ? (
+                      <img src={platform.imageUrl} alt={platform.name} className="h-6 max-w-[130px] object-contain object-left" />
+                    ) : (
+                      <span className="text-sm font-medium text-secondary-text hover:text-foreground whitespace-nowrap transition-colors">{platform.name}</span>
+                    )}
+                  </div>
+                );
+                return platform.link ? (
+                  <a
+                    key={platform.name + idx}
+                    href={platform.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={platform.name}
+                    className="w-fit block"
+                  >
+                    {badge}
+                  </a>
+                ) : (
+                  <div key={platform.name + idx} title={platform.name} className="w-fit">
+                    {badge}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom bar */}
+      <div className="max-w-6xl mx-auto px-6 py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+        <span className="text-xs text-secondary-text">
+          {footerData.copyright}
+        </span>
+
+        <div className="flex gap-6 text-xs text-secondary-text">
+          {footerData.bottomLinks.map((link) => (
+            <a 
+              key={link.label} 
+              href={link.href} 
+              onClick={(e) => handleLinkClick(e, link.href)}
+              className="hover:text-foreground transition-colors"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ArrowRight className="w-3.5 h-3.5 text-primary" />
+          <button 
+            onClick={() => handleScrollToSection("contact")} 
+            className="text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
+          >
+            Book a discovery call
+          </button>
+        </div>
+      </div>
+    </footer>
+  );
+}

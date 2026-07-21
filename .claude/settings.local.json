@@ -64,7 +64,29 @@
       "Bash(taskkill //PID 23628 //F)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(node -e \"const p = require\\('./node_modules/three/package.json'\\); console.log\\('types field:', p.types || p.typings || 'none'\\); console.log\\('has build/three.core.d.ts:', require\\('fs'\\).existsSync\\('./node_modules/three/build/three.core.d.ts'\\)\\);\")"
+      "Bash(node -e \"const p = require\\('./node_modules/three/package.json'\\); console.log\\('types field:', p.types || p.typings || 'none'\\); console.log\\('has build/three.core.d.ts:', require\\('fs'\\).existsSync\\('./node_modules/three/build/three.core.d.ts'\\)\\);\")",
+      "Bash(bash 'C:\\\\Users\\\\md\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.0.3\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh' --project-dir /c/ai --open)",
+      "Bash(bash 'C:\\\\Users\\\\md\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.0.3\\\\skills\\\\brainstorming\\\\scripts\\\\stop-server.sh' /c/ai/.superpowers/brainstorm/972-1783428608)",
+      "PowerShell(Get-ChildItem C:\\\\ai\\\\server -Exclude node_modules | ForEach-Object { $_.FullName })",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(mkdir -p \"/c/Users/md/AppData/Local/Temp/claude/C--ai/f82d472f-066c-4106-90b0-fdb8a78c1460/scratchpad/reactbits-fetch\")",
+      "Bash(npm init *)",
+      "Bash(npx shadcn@latest add @react-bits/ColorBends-TS-CSS --yes)",
+      "Bash(npx jsrepo@latest add react-bits/ColorBends --yes)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://reactbits.dev/r/color-bends-ts-tw\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://reactbits.dev/r/color-bends-ts-css\")",
+      "Bash(curl *)",
+      "Bash(timeout 30 npx jsrepo@latest list github/DavidHDev/react-bits)",
+      "Bash(npx vite *)",
+      "Bash(grep -rlE \"bg-white\\(\\\\/|[^-]\\)|text-neutral-[0-9]|bg-neutral-[0-9]|text-gray-|bg-gray-|border-neutral-[0-9]|text-black\\\\b\" /c/ai/src --include=\"*.tsx\")",
+      "Bash(node *)",
+      "Bash(git status *)",
+      "Skill(run)",
+      "Skill(claude-in-chrome)",
+      "Bash(npx oxlint *)",
+      "WebFetch(domain:nitwebs.com)",
+      "Bash(grep -n \"#[0-9a-fA-F]\\\\{3,6\\\\}\\\\|background:\\\\s*white\\\\|color:\\\\s*black\\\\|rgba\\(0,\\\\s*0,\\\\s*0\\\\|rgba\\(255\" src/components/StaggeredMenu.css)",
+      "Bash(npm audit *)"
     ]
   }
 }

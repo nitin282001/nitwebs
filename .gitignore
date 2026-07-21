@@ -23,3 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 .superpowers/
+
+# Backend & Data
+server/node_modules
+server/db_data
+server/uploads
+*.env
+*.env.local
+
