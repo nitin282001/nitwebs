@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Header from "../components/Header";
+import { getApiUrl } from "../lib/api";
 import Footer from "../components/Footer";
 import GridLines from "../components/GridLines";
 import NotFound from "./NotFound";
@@ -20,12 +21,21 @@ export default function DynamicPage() {
       setLoading(true);
       setError(false);
       try {
-        const res = await fetch(`http://localhost:5000/api/pages/${slug}`);
+        const res = await fetch(getApiUrl(`/pages/${slug}`));
         if (!res.ok) {
           throw new Error("Page not found");
         }
         const data = await res.json();
-        setPage(data);
+        if (Array.isArray(data)) {
+          const found = data.find((p: any) => p.slug === slug);
+          if (found) {
+            setPage(found);
+          } else {
+            setError(true);
+          }
+        } else {
+          setPage(data);
+        }
       } catch (err) {
         setError(true);
       } finally {

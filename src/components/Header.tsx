@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { getApiUrl } from "../lib/api";
 import { motion } from "motion/react";
 import NitwebsLogo from "./NitwebsLogo";
 import StaggeredMenu from "./StaggeredMenu";
 import type { StaggeredMenuItem, StaggeredMenuSocialItem } from "./StaggeredMenu";
 import SpecularButton from "./ui/SpecularButton";
-import ThemeToggle from "./ThemeToggle";
+import SolutionsDrawer from "./SolutionsDrawer";
 import { useIntroAnimation } from "../context/IntroContext";
 
 interface NavChild {
@@ -29,36 +30,37 @@ interface HeaderProps {
 }
 
 const DEFAULT_LINKS: NavLinkData[] = [
-  { label: "Services", type: "scroll", target: "services", children: [] },
-  { label: "Work",     type: "scroll", target: "showcase", children: [] },
-  { label: "Process",  type: "scroll", target: "process",  children: [] },
-  { label: "Platform", type: "scroll", target: "platform", children: [] }
+  { label: "Services",  type: "scroll", target: "services",  children: [] },
+  { label: "Work",      type: "scroll", target: "showcase",  children: [] },
+  { label: "Process",   type: "scroll", target: "process",   children: [] },
+  { label: "Platform",  type: "scroll", target: "platform",  children: [] }
 ];
 
-export default function Header({ logoConfig, scrollProgress }: HeaderProps) {
-  const { isTransitioned, shouldPlay, setLogoConfig } = useIntroAnimation();
+export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: HeaderProps) {
+  const { isTransitioned, shouldPlay, logoConfig: contextLogoConfig, setLogoConfig } = useIntroAnimation();
+  const effectiveLogoConfig = propsLogoConfig || contextLogoConfig;
   const [links, setLinks] = useState<NavLinkData[]>(DEFAULT_LINKS);
   const [ctaLabel, setCtaLabel] = useState("Get Started");
   const [ctaType, setCtaType] = useState<"scroll" | "page" | "url">("scroll");
   const [ctaTarget, setCtaTarget] = useState("contact");
   
   const [headerSolid, setHeaderSolid] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [socials, setSocials] = useState<StaggeredMenuSocialItem[]>([
     { label: "LinkedIn", link: "https://linkedin.com" },
     { label: "Twitter", link: "https://twitter.com" },
     { label: "GitHub", link: "https://github.com" }
   ]);
-  const [showThemeToggle, setShowThemeToggle] = useState(true);
 
   useEffect(() => {
-    if (logoConfig) {
-      setLogoConfig(logoConfig);
+    if (propsLogoConfig) {
+      setLogoConfig(propsLogoConfig);
     }
-  }, [logoConfig, setLogoConfig]);
+  }, [propsLogoConfig, setLogoConfig]);
 
   useEffect(() => {
     // Fetch dynamic nav links
-    fetch("http://localhost:5000/api/nav")
+    fetch(getApiUrl("/nav"))
       .then((res) => {
         if (!res.ok) throw new Error("Navigation API offline");
         return res.json();
@@ -75,32 +77,24 @@ export default function Header({ logoConfig, scrollProgress }: HeaderProps) {
         console.warn("Navigation API offline, using fallback static navLinks:", err.message);
       });
 
-    // Fetch footer socials for staggered menu
-    fetch("http://localhost:5000/api/footer")
-      .then((res) => {
-        if (!res.ok) throw new Error("Footer API offline");
-        return res.json();
-      })
-      .then((data) => {
-        if (data.social && data.social.length > 0) {
-          setSocials(data.social.map((s: any) => ({
-            label: s.platform,
-            link: s.href
-          })));
-        }
-      })
-      .catch((err) => {
-        console.warn("Footer API offline or error, using default socials:", err.message);
-      });
-
-    // Fetch site content for the theme-toggle visibility setting
-    fetch("http://localhost:5000/api/content")
+    // Fetch site content — single source for socials, logo config, theme toggle
+    fetch(getApiUrl("/content"))
       .then((res) => {
         if (!res.ok) throw new Error("Content API offline");
         return res.json();
       })
       .then((data) => {
-        setShowThemeToggle(data?.theme?.showThemeToggle !== false);
+        // Logo config
+        if (data?.logo) {
+          setLogoConfig(data.logo);
+        }
+        // Social Links admin panel → SiteContent.socialLinks is the single source of truth
+        if (data?.socialLinks && data.socialLinks.length > 0) {
+          setSocials(data.socialLinks.map((s: any) => ({
+            label: s.platform,
+            link: s.href
+          })));
+        }
       })
       .catch((err) => {
         console.warn("Content API offline, defaulting theme toggle to visible:", err.message);
@@ -181,8 +175,8 @@ export default function Header({ logoConfig, scrollProgress }: HeaderProps) {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        headerSolid ? "bg-background/90 backdrop-blur-sm border-b border-border" : "bg-transparent"
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 h-0 lg:h-auto ${
+        headerSolid ? "lg:bg-background/90 lg:backdrop-blur-sm lg:border-b lg:border-border" : "bg-transparent"
       }`}
     >
       {/* Scroll Progress Bar */}
@@ -209,7 +203,7 @@ export default function Header({ logoConfig, scrollProgress }: HeaderProps) {
               }}
               className="flex items-center"
             >
-              <NitwebsLogo logoConfig={logoConfig} className="h-7 w-auto" />
+              <NitwebsLogo logoConfig={effectiveLogoConfig} className="h-7 w-auto" />
             </motion.div>
           ) : (
             <div className="h-7 w-[120px]" />
@@ -280,7 +274,16 @@ export default function Header({ logoConfig, scrollProgress }: HeaderProps) {
                       {link.label}
                     </a>
                   ) : (
-                    <button onClick={() => handleScrollToSection(link.target)} className="text-sm font-medium text-secondary-text hover:text-foreground transition-colors cursor-pointer block">
+                    <button 
+                      onClick={() => {
+                        if (link.label === "Solutions" || link.label === "Services") {
+                          setIsDrawerOpen(true);
+                        } else {
+                          handleScrollToSection(link.target);
+                        }
+                      }} 
+                      className="text-sm font-medium text-secondary-text hover:text-foreground transition-colors cursor-pointer"
+                    >
                       {link.label}
                     </button>
                   )
@@ -292,7 +295,6 @@ export default function Header({ logoConfig, scrollProgress }: HeaderProps) {
 
         {/* Desktop CTA */}
         <div className="hidden lg:flex items-center gap-5 relative">
-          {showThemeToggle && <ThemeToggle />}
           <SpecularButton
             onClick={handleCtaClick}
             size="sm"
@@ -315,13 +317,25 @@ export default function Header({ logoConfig, scrollProgress }: HeaderProps) {
       {/* Mobile Staggered Menu */}
       <div className="lg:hidden w-full">
         <StaggeredMenu
-          logoConfig={logoConfig}
+          logoConfig={effectiveLogoConfig}
           items={staggeredItems}
           socialItems={socials}
-          onScrollToSection={handleScrollToSection}
-          showThemeToggle={showThemeToggle}
+          onScrollToSection={(target) => {
+            if (target === "solutions" || target === "services") {
+              setIsDrawerOpen(true);
+            } else {
+              handleScrollToSection(target);
+            }
+          }}
         />
       </div>
+
+      {/* Side Drawer Component */}
+      <SolutionsDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onScrollToSection={handleScrollToSection}
+      />
     </header>
   );
 }

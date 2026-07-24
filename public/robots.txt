@@ -1,5 +1,3 @@
-User-agent: *
+﻿User-agent: *
 Allow: /
-Disallow: /admin
-
 Sitemap: https://nitwebs.com/sitemap.xml

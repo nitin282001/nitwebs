@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "../components/Header";
+import { getApiUrl, getSubmitUrl } from "../lib/api";
 import Footer from "../components/Footer";
 import GridLines from "../components/GridLines";
 import GridDivider from "../components/GridDivider";
@@ -33,16 +34,27 @@ export default function JobDetail() {
       setNotFound(false);
       setIsClosed(false);
       try {
-        const res = await fetch(`http://localhost:5000/api/jobs/${slug}`);
+        const res = await fetch(getApiUrl(`/jobs/${slug}`));
         if (res.status === 404) {
           setNotFound(true);
           return;
         }
         if (!res.ok) throw new Error("Failed to load job details");
         const data = await res.json();
-        setJob(data);
-        
-        document.title = `${data.title} — Careers — Nitwebs`;
+        if (Array.isArray(data)) {
+          const found = data.find((j: any) => j.slug === slug);
+          if (found) {
+            setJob(found);
+            document.title = `${found.title} — Careers — Nitwebs`;
+            if (found.status === "closed") setIsClosed(true);
+          } else {
+            setNotFound(true);
+          }
+        } else {
+          setJob(data);
+          document.title = `${data.title} — Careers — Nitwebs`;
+          if (data.status === "closed") setIsClosed(true);
+        }
       } catch (err) {
         console.error(err);
         setNotFound(true);
@@ -100,7 +112,7 @@ export default function JobDetail() {
     formData.append("resume", resume);
 
     try {
-      const res = await fetch("http://localhost:5000/api/applications", {
+      const res = await fetch(getSubmitUrl("/applications"), {
         method: "POST",
         body: formData
       });

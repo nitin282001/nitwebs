@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, animate } from "motion/react";
 import type { AnimationPlaybackControls } from "motion/react";
+import { getApiUrl } from "../lib/api";
 import type { IconType } from "react-icons";
 import { useIntroAnimation } from "../context/IntroContext";
+import { useTheme } from "../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
 import {
   Cpu,
   Layers,
-  Globe,
   Workflow,
-  Cloud,
-  Palette,
   Star,
   CheckCircle,
   MessageSquare,
-  Lock
+  Lock,
+  ArrowUpRight
 } from "lucide-react";
 import {
   SiAnthropic,
@@ -55,7 +56,9 @@ import { hexToHsl } from "../lib/utils";
 import SpecularButton from "../components/ui/SpecularButton";
 import IndustriesOrbit from "../sections/IndustriesOrbit";
 import SaasShowcaseSection from "../sections/SaasShowcaseSection";
+import TeamGallerySection from "../sections/TeamGallerySection";
 import ContactSection from "../sections/ContactSection";
+import SpotlightCard from "../components/SpotlightCard";
 
 
 
@@ -137,6 +140,16 @@ function OrbitIcon({
   onPause,
   onResume,
 }: OrbitIconData & { radius: number; angle: ReturnType<typeof useMotionValue<number>>; onPause: () => void; onResume: () => void }) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
+  const displayColor =
+    isDark && (color === "#000000" || color === "#363636" || color === "#000")
+      ? "#ffffff"
+      : !isDark && color === "#ffffff"
+      ? "#000000"
+      : color;
+
   const x = useTransform(angle, (a: any) => {
     const rad = (((a as number) + baseAngle) * Math.PI) / 180;
     return radius * Math.sin(rad);
@@ -161,12 +174,12 @@ function OrbitIcon({
       onHoverEnd={onResume}
     >
       <div
-        className="rounded-full bg-background border border-border shadow-sm flex items-center justify-center cursor-pointer transition-transform duration-200 ease-out group-hover:scale-125"
+        className="rounded-full bg-surface/90 border border-border/80 shadow-lg flex items-center justify-center cursor-pointer transition-all duration-300 ease-out group-hover:scale-125 group-hover:border-primary group-hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] backdrop-blur-md"
         style={{ width: ORBIT_ICON_HALF * 2, height: ORBIT_ICON_HALF * 2 }}
       >
-        <Icon style={{ color }} className="w-5 h-5" />
+        <Icon style={{ color: displayColor }} className="w-5 h-5 transition-colors duration-200" />
       </div>
-      <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      <span className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2 mt-2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background opacity-0 transition-opacity duration-200 group-hover:opacity-100 shadow-md">
         {name}
       </span>
     </motion.div>
@@ -228,44 +241,32 @@ const brandIconMap: { [key: string]: any } = {
   FaAws
 };
 
-const SERVICES = [
-  {
-    icon: Cpu,
-    title: "AI Engineering",
-    desc: "Build intelligent products powered by AI—from custom AI agents and business automation to LLM integrations, chatbots, document intelligence, and workflow optimization.",
-  },
-  {
-    icon: Layers,
-    title: "Custom Software & SaaS",
-    desc: "Develop enterprise-grade platforms tailored to your business. We build CRMs, ERPs, SaaS products, portals, dashboards, and internal systems that scale effortlessly.",
-  },
-  {
-    icon: Globe,
-    title: "Web & Mobile Applications",
-    desc: "Create fast, secure, and engaging digital experiences with responsive websites, progressive web apps, and cross-platform mobile applications built for performance.",
-  },
-  {
-    icon: Workflow,
-    title: "Automation & System Integration",
-    desc: "Eliminate repetitive work by connecting your existing tools through APIs, payment gateways, CRM integrations, ERP systems, messaging platforms, and automated workflows.",
-  },
-  {
-    icon: Cloud,
-    title: "Cloud Infrastructure & DevOps",
-    desc: "Deploy confidently with secure, scalable cloud architecture, CI/CD pipelines, Docker containers, database optimization, monitoring, and high-availability infrastructure.",
-  },
-  {
-    icon: Palette,
-    title: "UI/UX & Product Design",
-    desc: "Design intuitive digital experiences that users love. From research and wireframes to polished interfaces, we create products that are beautiful, functional, and conversion-focused.",
-  },
-];
 
 const PROCESS_STEPS = [
-  { stage: "01", title: "Discovery", desc: "We understand your business goals, users, and requirements to create the right technology strategy." },
-  { stage: "02", title: "Design", desc: "We craft intuitive UI/UX and scalable system architecture focused on performance and user experience." },
-  { stage: "03", title: "Development", desc: "Our team builds secure custom software, SaaS platforms, websites, and mobile apps using modern technologies." },
-  { stage: "04", title: "Launch & Support", desc: "We deploy, monitor, and continuously improve your product to ensure long-term growth and reliability." },
+  {
+    stage: "1",
+    shape: "circle",
+    title: "Discovery & Technical Alignment",
+    desc: "We align on business goals, user needs, and technical constraints to define a clear, execution-ready roadmap."
+  },
+  {
+    stage: "2",
+    shape: "leaf",
+    title: "UX Strategy & Prototyping",
+    desc: "User flows, wireframes, and interactive prototypes that validate assumptions before development begins."
+  },
+  {
+    stage: "3",
+    shape: "triangle",
+    title: "Agile Development & Quality Assurance",
+    desc: "Iterative development with continuous testing, security reviews, and transparent progress updates."
+  },
+  {
+    stage: "4",
+    shape: "square",
+    title: "Launch, Scale & Continuous Support",
+    desc: "Deployment, monitoring, performance optimization, and ongoing enhancements as your product evolves."
+  }
 ];
 
 const WHY_US_POINTS = [
@@ -378,8 +379,6 @@ const TESTIMONIALS = [
   { name: "Marcus Brody", role: "Operations Lead, Prysma Ltd", review: "Custom automation scripts reduced document search loops down to seconds." },
 ];
 
-const iconMap: { [key: string]: any } = { Cpu, Layers, Globe, Workflow, Cloud, Palette, CheckCircle, MessageSquare, Lock };
-
 export default function HomeMain() {
   const [siteData, setSiteData] = useState<any>(null);
   useGlobalScramble();
@@ -387,7 +386,7 @@ export default function HomeMain() {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/content");
+        const res = await fetch(getApiUrl("/content"));
         if (!res.ok) throw new Error("API content failed");
         const data = await res.json();
         setSiteData(data);
@@ -408,6 +407,7 @@ export default function HomeMain() {
     }
   }, [siteData]);
 
+  const navigate = useNavigate();
   const [scrollProgress, setScrollProgress] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -458,7 +458,6 @@ export default function HomeMain() {
     desc: "We engineer AI products, scalable software, SaaS platforms, mobile apps, and automation systems for ambitious companies worldwide."
   };
 
-  const servicesList = siteData?.services || SERVICES;
   const processList = siteData?.process || PROCESS_STEPS;
   const whyUsList = siteData?.whyUs || WHY_US_POINTS;
   const showcaseList = siteData?.showcase || [
@@ -498,49 +497,57 @@ export default function HomeMain() {
       title: "Construction",
       subheading: "Building Smarter Construction Operations",
       desc: "Streamline project management, workforce operations, scheduling, compliance, and reporting with modern construction software solutions.",
-      icon: "Hammer"
+      icon: "Hammer",
+      image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Healthcare",
       subheading: "Transforming Patient Care Through Technology",
       desc: "Develop secure healthcare platforms, patient portals, appointment systems, and digital solutions that improve care delivery.",
-      icon: "Activity"
+      icon: "Activity",
+      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "FinTech",
       subheading: "Powering the Future of Financial Services",
       desc: "Build reliable fintech applications, payment platforms, digital wallets, and financial software with enterprise-grade security.",
-      icon: "CreditCard"
+      icon: "CreditCard",
+      image: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Retail & eCommerce",
       subheading: "Creating Seamless Shopping Experiences",
       desc: "Create high-converting eCommerce platforms, inventory systems, customer portals, and omnichannel retail experiences for growth.",
-      icon: "ShoppingBag"
+      icon: "ShoppingBag",
+      image: "https://images.unsplash.com/photo-1563013544-824ae1d704d3?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Manufacturing",
       subheading: "Intelligent Systems for Modern Manufacturing",
       desc: "Optimize production workflows, inventory management, operational visibility, and business processes with intelligent manufacturing software.",
-      icon: "Factory"
+      icon: "Factory",
+      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Logistics & Supply Chain",
       subheading: "Connecting Every Mile of Your Supply Chain",
       desc: "Improve fleet management, shipment tracking, warehouse operations, and logistics efficiency through connected digital platforms.",
-      icon: "Truck"
+      icon: "Truck",
+      image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Real Estate",
       subheading: "Digital Solutions for Modern Real Estate",
       desc: "Develop property management systems, CRM platforms, listing portals, and digital experiences for modern real estate businesses.",
-      icon: "Building2"
+      icon: "Building2",
+      image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Education (EdTech)",
       subheading: "Empowering Learners Through Innovation",
       desc: "Build engaging learning platforms, student portals, virtual classrooms, and education management systems for digital learning.",
-      icon: "GraduationCap"
+      icon: "GraduationCap",
+      image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1200&auto=format&fit=crop"
     }
   ];
 
@@ -657,79 +664,191 @@ export default function HomeMain() {
           </motion.div>
         </div>
 
-        {/* Trusted logos */}
-        <div className="relative w-full pt-10 mt-12">
-          {/* Full-width edge-to-edge horizontal divider line with corner plus marks */}
-          <div className="absolute inset-x-0 top-0 h-px bg-border z-10">
-            <div className="max-w-6xl mx-auto relative h-full">
-              <span className="text-border select-none leading-none text-[13px] absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2">+</span>
-              <span className="text-border select-none leading-none text-[13px] absolute right-0 top-0 translate-x-1/2 -translate-y-1/2">+</span>
+      </section>
+
+      {/* Trusted logos */}
+      <section className="relative py-7 sm:py-8 px-6 bg-transparent">
+        <GridDivider />
+        <Reveal className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-secondary-text text-xs uppercase tracking-widest text-center md:text-left shrink-0">
+              Trusted by high-growth startups
+            </div>
+            <div className="marquee-container w-full overflow-hidden relative [mask-image:linear-gradient(to_right,transparent,white_15%,white_85%,transparent)] select-none">
+              <div className="animate-marquee flex items-center gap-6 sm:gap-12 py-1">
+                {brandsList.concat(brandsList).map((logo: any, idx: number) => {
+                  const BrandIcon = brandIconMap[logo.icon] || SiVercel;
+                  return (
+                    <div key={idx} className="flex items-center justify-center shrink-0 grayscale opacity-100 hover:grayscale-0 transition-all">
+                      {logo.imageUrl ? (
+                        <img src={logo.imageUrl} alt={logo.name || "Brand logo"} className="h-16 sm:h-20 max-w-[220px] sm:max-w-[300px] object-contain" />
+                      ) : (
+                        <BrandIcon className="w-16 h-16 sm:w-20 sm:h-20 text-foreground" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-
-          <Reveal className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-secondary-text text-xs uppercase tracking-widest text-center md:text-left shrink-0">
-                Trusted by high-growth startups
-              </div>
-              <div className="marquee-container w-full overflow-hidden relative [mask-image:linear-gradient(to_right,transparent,white_15%,white_85%,transparent)] select-none">
-                <div className="animate-marquee flex items-center gap-16 py-1">
-                  {brandsList.concat(brandsList).map((logo: any, idx: number) => {
-                    const BrandIcon = brandIconMap[logo.icon] || SiVercel;
-                    return (
-                      <div key={idx} className="flex items-center gap-2.5 shrink-0 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all">
-                        {logo.imageUrl ? (
-                          <img src={logo.imageUrl} alt={logo.name} className="h-6 max-w-[120px] object-contain" />
-                        ) : (
-                          <BrandIcon className="w-5 h-5 text-foreground" />
-                        )}
-                        <span className="text-sm font-semibold text-foreground">{logo.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
+        </Reveal>
       </section>
 
       {/* Services Section */}
-      <section id="services" className="relative py-24 px-6">
+      <section id="services" className="relative py-16 sm:py-24 px-6 bg-transparent">
         <GridDivider />
         <div className="max-w-6xl mx-auto">
-          <Reveal className="max-w-2xl mb-16">
-            <span className="text-xs font-mono text-primary tracking-widest uppercase block mb-3">OUR EXPERTISE</span>
+          <Reveal className="max-w-4xl mb-16">
+            <span className="text-xs font-mono text-primary tracking-widest uppercase block mb-3">OUR SERVICES</span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-normal font-headline text-foreground mb-4">
-              Building Technology That Powers Modern Businesses
+              Services Built for Modern Digital Businesses
             </h2>
-            <p className="text-secondary-text text-lg">
-              We combine world-class engineering, AI, cloud infrastructure, and product strategy to build scalable software that helps businesses innovate, automate, and grow with confidence.
+            <p className="text-secondary-text text-base sm:text-lg font-sans leading-relaxed">
+              From product engineering to enterprise platforms and growth enablement, we help teams build, modernize, and scale with confidence.
             </p>
           </Reveal>
 
-          <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {servicesList.map((service: any) => {
-              const ServiceIcon = typeof service.icon === "string" ? (iconMap[service.icon] || Cpu) : (service.icon || Cpu);
+          {/* Grid Container with crisp border lines matching reference */}
+          <div className="border border-border rounded-xl overflow-hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 bg-surface/30 backdrop-blur-md divide-y md:divide-y-0 md:divide-x divide-border">
+            {(siteData?.services && siteData.services.length > 0
+              ? siteData.services.map((s: any) => {
+                  const rawLines = s.desc
+                    ? s.desc.split(/\r?\n|•/).map((l: string) => l.trim()).filter(Boolean)
+                    : [];
+                  return {
+                    title: s.title,
+                    link: s.link || "",
+                    points: rawLines.length > 0
+                      ? rawLines.map((line: string) => ({ raw: line }))
+                      : [{ bold: s.title, text: "engineering & platform services" }]
+                  };
+                })
+              : [
+                  {
+                    title: "Product Engineering",
+                    link: "",
+                    points: [
+                      { bold: "Full-cycle product development", text: "(MVP to scale)" },
+                      { bold: "Web, mobile, and SaaS", text: "application engineering" },
+                      { bold: "Cloud-native, API-first,", text: "and headless architectures" },
+                      { bold: "Senior-led delivery", text: "with clear technical ownership" }
+                    ]
+                  },
+                  {
+                    title: "Enterprise & Platform Modernization",
+                    link: "",
+                    points: [
+                      { bold: "Legacy system modernization", text: "and re-architecture" },
+                      { bold: "ERP implementation", text: "& customization" },
+                      { bold: "CMS, platform, and integration", text: "modernization" },
+                      { bold: "Cloud migration", text: "and infrastructure optimization" }
+                    ]
+                  },
+                  {
+                    title: "UI/UX & Experience Design",
+                    link: "",
+                    points: [
+                      { bold: "Product UX", text: "and interaction design" },
+                      { bold: "Design systems", text: "for scalable platforms" },
+                      { bold: "User research, usability testing,", text: "and validation" },
+                      { bold: "Conversion-focused interfaces", text: "for web and mobile" }
+                    ]
+                  },
+                  {
+                    title: "Growth & Digital Enablement",
+                    link: "",
+                    points: [
+                      { bold: "SEO, performance marketing,", text: "and analytics" },
+                      { bold: "Branding and digital identity", text: "systems" },
+                      { bold: "E-commerce platforms", text: "and MarTech enablement" },
+                      { bold: "Experimentation, CRO,", text: "and performance optimization" }
+                    ]
+                  },
+                  {
+                    title: "Data, AI & Platform Intelligence",
+                    link: "",
+                    points: [
+                      { bold: "Data architecture, pipelines,", text: "and modern data stacks" },
+                      { bold: "Analytics, BI dashboards,", text: "and decision platforms" },
+                      { bold: "AI/ML enablement, applied AI,", text: "and workflow automation" }
+                    ]
+                  },
+                  {
+                    title: "Dedicated Teams & Technology Partnerships",
+                    link: "",
+                    points: [
+                      { bold: "Dedicated product, platform,", text: "and engineering teams" },
+                      { bold: "Staff augmentation", text: "with clear ownership and accountability" },
+                      { bold: "Flexible engagement models", text: "aligned to growth stages" }
+                    ]
+                  }
+                ]
+            ).map((box: any, idx: number) => {
+              const hasLink = Boolean(box.link && String(box.link).trim() !== "");
+
+              const renderInline = (str: string) => {
+                if (!str) return null;
+                const tokens = str.split(/(\*\*.*?\*\*|\*.*?\*|<b>.*?<\/b>|<i>.*?<\/i>)/g);
+                return tokens.map((part, i) => {
+                  if ((part.startsWith("**") && part.endsWith("**")) || (part.startsWith("<b>") && part.endsWith("</b>"))) {
+                    const txt = part.startsWith("**") ? part.slice(2, -2) : part.slice(3, -4);
+                    return <span key={i} className="font-medium text-foreground">{txt}</span>;
+                  }
+                  if ((part.startsWith("*") && part.endsWith("*")) || (part.startsWith("<i>") && part.endsWith("</i>"))) {
+                    const txt = part.startsWith("*") ? part.slice(1, -1) : part.slice(3, -4);
+                    return <em key={i} className="italic text-foreground">{txt}</em>;
+                  }
+                  return <span key={i}>{part}</span>;
+                });
+              };
+
               return (
                 <motion.div
-                  key={service.title}
-                  variants={fadeUp}
-                  whileHover={{ y: -4 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                  className="card-panel group rounded-2xl p-7 flex flex-col gap-4 cursor-default"
+                  key={box.title + idx}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.08 }}
+                  onClick={() => {
+                    if (hasLink) {
+                      const target = box.link.startsWith("/") ? box.link : `/${box.link}`;
+                      navigate(target);
+                    }
+                  }}
+                  className={`p-6 sm:p-7 flex flex-col justify-between border-b border-border transition-colors group ${
+                    hasLink ? "hover:bg-surface/50 cursor-pointer" : "hover:bg-surface/40"
+                  }`}
                 >
-                  <div className="w-11 h-11 bg-background text-primary rounded-xl flex items-center justify-center border border-border shadow-sm transition-all duration-300 group-hover:bg-primary-tint/40 group-hover:border-primary/20 group-hover:shadow-md group-hover:scale-105">
-                    <ServiceIcon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                  </div>
                   <div>
-                    <h3 className="text-lg font-bold text-foreground mb-2">{service.title}</h3>
-                    <p className="text-secondary-text text-sm leading-relaxed">{service.desc}</p>
+                    <div className="flex items-start justify-between gap-2 mb-4">
+                      <h3 className="text-lg sm:text-xl font-headline font-normal text-foreground leading-snug group-hover:text-primary transition-colors">
+                        {box.title}
+                      </h3>
+                      {hasLink && (
+                        <ArrowUpRight className="w-4 h-4 text-secondary-text group-hover:text-primary transition-colors shrink-0" />
+                      )}
+                    </div>
+                    <ul className="flex flex-col gap-2 font-sans text-xs sm:text-sm text-secondary-text">
+                      {box.points.map((pt: any, pIdx: number) => (
+                        <li key={pIdx} className="flex items-start gap-2 leading-normal">
+                          <span className="text-secondary-text/60 shrink-0 select-none text-xs mt-0.5">•</span>
+                          <span>
+                            {pt.raw ? (
+                              renderInline(pt.raw)
+                            ) : (
+                              <>
+                                <span className="font-medium text-foreground">{pt.bold}</span> {pt.text}
+                              </>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </motion.div>
               );
             })}
-          </StaggerGrid>
+          </div>
         </div>
       </section>
 
@@ -737,60 +856,70 @@ export default function HomeMain() {
       <AboutUsSection glitchColors={siteData?.theme?.glitchColors} />
 
       {/* Process Section */}
-      <section id="process" className="relative py-24 px-6 bg-surface/60">
+      <section id="process" className="relative py-24 px-6 bg-transparent">
         <GridDivider />
         <div className="max-w-6xl mx-auto">
-          <Reveal className="max-w-2xl mb-16">
+          <Reveal className="max-w-4xl mb-16">
             <span className="text-xs font-mono text-primary tracking-widest uppercase block mb-3">OUR DEVELOPMENT PROCESS</span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-normal font-headline text-foreground mb-4">
-              From Idea to Launch
+              Our Development Process
             </h2>
-            <p className="text-secondary-text text-lg">
-              We follow a streamlined software development process that delivers scalable, secure, and high-performance digital solutions for businesses across Europe, Australia, and India.
+            <p className="text-secondary-text text-base sm:text-lg font-sans leading-relaxed">
+              A structured, product-first approach designed to reduce risk, ensure clarity, and deliver predictable outcomes.
             </p>
           </Reveal>
 
-          <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-            {/* Background connecting line on desktop */}
-            <div className="hidden lg:block absolute top-[44px] left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-border via-primary/30 to-border -z-10" />
-
+          <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {processList.map((step: any, idx: number) => (
               <motion.div
                 key={step.stage}
                 variants={fadeUp}
                 whileHover={{ y: -6 }}
                 transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                className="card-panel group rounded-2xl p-7 bg-background relative overflow-hidden transition-all duration-300 hover:border-primary/40 hover:shadow-xl cursor-default flex flex-col justify-between min-h-[220px]"
               >
-                {/* Decorative background glow on hover */}
-                <div className="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-primary/5 blur-2xl transition-all duration-500 group-hover:bg-primary/10 group-hover:scale-150" />
+                <SpotlightCard
+                  className="h-full flex flex-col gap-4 sm:min-h-[300px] sm:justify-between p-5 sm:p-6 rounded-2xl border border-border/80 shadow-lg hover:border-primary/50 transition-all duration-300 group"
+                  spotlightColor="rgba(168, 85, 247, 0.25)"
+                >
+                  <div>
+                    {/* Top Stage Number paired with Geometric Vector Accent */}
+                    <div className="flex items-center gap-2.5 mb-3 sm:mb-5">
+                      {idx === 0 && (
+                        <svg viewBox="0 0 40 40" className="w-7 h-7 fill-primary shrink-0">
+                          <path d="M 20 0 A 20 20 0 0 1 20 40 Z" />
+                        </svg>
+                      )}
+                      {idx === 1 && (
+                        <svg viewBox="0 0 40 40" className="w-7 h-7 fill-primary shrink-0">
+                          <path d="M 0 20 C 0 8.95 8.95 0 20 0 L 40 0 L 40 20 C 40 31.05 31.05 40 20 40 C 8.95 40 0 31.05 0 20 Z" />
+                        </svg>
+                      )}
+                      {idx === 2 && (
+                        <svg viewBox="0 0 40 40" className="w-7 h-7 fill-primary shrink-0">
+                          <polygon points="0,40 20,0 40,40" />
+                        </svg>
+                      )}
+                      {idx === 3 && (
+                        <svg viewBox="0 0 40 40" className="w-7 h-7 fill-primary shrink-0">
+                          <rect x="0" y="0" width="36" height="36" rx="4" />
+                        </svg>
+                      )}
+                      <span className="text-4xl sm:text-5xl font-headline font-normal tracking-tight text-white dark:text-foreground select-none">
+                        {String(step.stage).padStart(2, '0')}
+                      </span>
+                    </div>
 
-                {/* Accent indicator line at the top */}
-                <div className="absolute top-0 left-0 right-0 h-[3px] bg-transparent transition-all duration-300 group-hover:bg-primary" />
-
-                <div className="relative">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold tracking-wider px-2.5 py-1 rounded bg-primary/15 text-primary border border-primary/30 dark:bg-primary/30 dark:text-purple-200 dark:border-primary/50 shadow-sm">
-                      STAGE {step.stage}
-                    </span>
-                    <span className="text-4xl font-bold font-headline select-none text-foreground/5 transition-all duration-500 group-hover:text-primary/10 group-hover:-translate-y-1">
-                      {step.stage}
-                    </span>
+                    {/* Stage Title */}
+                    <h3 className="text-lg sm:text-xl font-headline font-normal text-white dark:text-foreground mb-3 leading-snug group-hover:text-primary transition-colors">
+                      {step.title}
+                    </h3>
                   </div>
-                  <h3 className="text-xl font-bold text-foreground mt-4 mb-3 transition-colors duration-300 group-hover:text-primary">
-                    {step.title}
-                  </h3>
-                  <p className="text-secondary-text text-sm leading-relaxed">
+
+                  {/* Stage Description */}
+                  <p className="text-white/65 dark:text-secondary-text text-xs sm:text-sm font-sans leading-relaxed">
                     {step.desc}
                   </p>
-                </div>
-
-                {/* Visual indicator of flow (arrow) on desktop */}
-                {idx < 3 && (
-                  <div className="hidden lg:flex absolute top-[35px] -right-[19px] w-[20px] h-[20px] rounded-full bg-background border border-border items-center justify-center text-[10px] text-secondary-text z-20 transition-all duration-300 group-hover:border-primary group-hover:text-primary">
-                    →
-                  </div>
-                )}
+                </SpotlightCard>
               </motion.div>
             ))}
           </StaggerGrid>
@@ -852,14 +981,7 @@ export default function HomeMain() {
                         </div>
                         <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">{project.title}</h3>
                         <p className="text-secondary-text text-sm mb-4 leading-relaxed">{project.desc}</p>
-                        <div className="border-t border-border pt-4 flex gap-8">
-                          {(project.metrics || []).map(([label, val]: [string, string]) => (
-                            <div key={label}>
-                              <div className="text-[10px] font-mono uppercase text-secondary-text/70">{label}</div>
-                              <div className="text-lg font-normal text-foreground font-headline mt-0.5">{val}</div>
-                            </div>
-                          ))}
-                        </div>
+
                       </div>
                       <div className="relative overflow-hidden aspect-video border-t border-border bg-muted">
                         <img
@@ -909,14 +1031,7 @@ export default function HomeMain() {
                     </div>
                     <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">{project.title}</h3>
                     <p className="text-secondary-text text-sm mb-4 leading-relaxed">{project.desc}</p>
-                    <div className="border-t border-border pt-4 flex gap-8">
-                      {(project.metrics || []).map(([label, val]: [string, string]) => (
-                        <div key={label}>
-                          <div className="text-[10px] font-mono uppercase text-secondary-text/70">{label}</div>
-                          <div className="text-lg font-normal text-foreground font-headline mt-0.5">{val}</div>
-                        </div>
-                      ))}
-                    </div>
+
                   </div>
                   <div className="relative overflow-hidden aspect-video border-t border-border bg-neutral-100">
                     <img
@@ -1041,6 +1156,9 @@ export default function HomeMain() {
 
       {/* SaaS Specialty Showcase Section */}
       <SaasShowcaseSection data={siteData?.saasShowcase} />
+
+      {/* Life at Nitwebs Team Gallery Section */}
+      <TeamGallerySection />
 
       {/* Contact + CTA Section */}
       <ContactSection />

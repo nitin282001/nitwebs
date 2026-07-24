@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import GridDivider from "../components/GridDivider";
 import { ChevronDown, CheckCircle, Mail, Phone, MapPin, AlertCircle } from "lucide-react";
+import { API_BASE } from "../lib/api";
 import SpecularButton from "../components/ui/SpecularButton";
 import GradientFlow from "../components/ui/GradientFlow";
 import Silk from "../components/ui/Silk";
@@ -198,7 +199,7 @@ export default function ContactSection({
     setFieldErrors({});
     setFormLoading(true);
 
-    fetch("http://localhost:5000/api/contact", {
+    fetch(`${API_BASE}/contact`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -29,12 +29,14 @@ import {
   Inbox,
   Upload,
   GripVertical,
-  X
+  X,
+  Share2,
+  Camera
 } from "lucide-react";
 
 import { hexToHsl } from "../lib/utils";
 
-const API_BASE = "http://localhost:5000/api";
+import { API_BASE } from "../lib/api";
 
 const SECTION_ANCHORS = [
   { id: "hero", label: "Hero Banner (#hero)" },
@@ -180,6 +182,28 @@ export default function AdminDashboard() {
   const [adminApps, setAdminApps] = useState<any[]>([]);
   const [adminAppsLoading, setAdminAppsLoading] = useState(false);
 
+  // Gallery States
+  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null);
+  const [newPhotoCaption, setNewPhotoCaption] = useState("");
+  const [newPhotoCategory, setNewPhotoCategory] = useState("office");
+
+  const fetchGalleryPhotos = async () => {
+    setGalleryLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/gallery`);
+      if (!res.ok) throw new Error("Failed to load gallery photos");
+      const data = await res.json();
+      setGalleryPhotos(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGalleryLoading(false);
+    }
+  };
+
   // Check existing token on mount
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
@@ -192,6 +216,7 @@ export default function AdminDashboard() {
       fetchPages();
       fetchAdminJobs();
       fetchAdminApps();
+      fetchGalleryPhotos();
     } else {
       setLoading(false);
     }
@@ -619,18 +644,7 @@ export default function AdminDashboard() {
     setContent({ ...content, [section]: list });
   };
 
-  const updateShowcaseMetric = (index: number, metricIdx: number, valIdx: number, val: string) => {
-    const list = [...content.showcase];
-    const project = { ...list[index] };
-    const metrics = project.metrics ? [...project.metrics.map((m: any) => [...m])] : [["", ""], ["", ""]];
-    while (metrics.length <= metricIdx) {
-      metrics.push(["", ""]);
-    }
-    metrics[metricIdx][valIdx] = val;
-    project.metrics = metrics;
-    list[index] = project;
-    setContent({ ...content, showcase: list });
-  };
+
 
   const addListItem = (section: string, template: any) => {
     const list = [...(content[section] || []), template];
@@ -792,7 +806,9 @@ export default function AdminDashboard() {
               { id: "showcase", label: "Project Showcase", icon: Briefcase },
               { id: "industries", label: "Industries Served", icon: Building2 },
               { id: "testimonials", label: "Testimonials", icon: MessageSquare },
+              { id: "gallery", label: "Team Gallery", icon: Camera },
               { id: "faqs", label: "FAQ Center", icon: ChevronDown },
+              { id: "socialLinks", label: "Social Links", icon: Share2 },
               { id: "footer", label: "Footer Content", icon: Globe },
             ].map(tab => (
               <button
@@ -1065,6 +1081,26 @@ export default function AdminDashboard() {
                 </label>
               </div>
 
+              {/* Under Construction Visibility Toggle */}
+              <div className="bg-neutral-50 border border-neutral-200/80 rounded-xl p-5 flex items-center justify-between shadow-sm mt-6">
+                <div>
+                  <span className="text-sm font-bold text-neutral-900 block">Under Construction Mode</span>
+                  <p className="text-xs text-neutral-500 mt-0.5">Lock the website and show an elegant under construction landing page. (Admin dashboard remains accessible at /admin).</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={content.theme?.underConstruction === true}
+                    onChange={(e) => setContent({
+                      ...content,
+                      theme: { ...content.theme, underConstruction: e.target.checked }
+                    })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
               <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6 mt-6">
                 <div>
                   <div className="flex justify-between items-center gap-4 mb-2">
@@ -1260,56 +1296,10 @@ export default function AdminDashboard() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
 
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pr-6">
-                        <div className="md:col-span-4">
-                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Brand Name</label>
-                          <input 
-                            type="text" 
-                            value={item.name || ""}
-                            onChange={(e) => handleListItemChange("brands", idx, "name", e.target.value)}
-                            className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-lg px-2.5 py-1.5 text-xs text-neutral-900 outline-none"
-                            placeholder="Vercel"
-                          />
-                        </div>
-
-                        <div className="md:col-span-4">
-                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Brand Icon</label>
-                          <select 
-                            value={item.icon || ""}
-                            onChange={(e) => handleListItemChange("brands", idx, "icon", e.target.value)}
-                            className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-lg px-2.5 py-1.5 text-xs text-neutral-900 outline-none cursor-pointer"
-                          >
-                            <option value="SiAnthropic">Anthropic</option>
-                            <option value="SiElevenlabs">ElevenLabs</option>
-                            <option value="SiVercel">Vercel</option>
-                            <option value="SiLinear">Linear</option>
-                            <option value="SiStripe">Stripe</option>
-                            <option value="SiCoinbase">Coinbase</option>
-                            <option value="SiNextdotjs">Next.js</option>
-                            <option value="SiReact">React</option>
-                            <option value="SiVuedotjs">Vue</option>
-                            <option value="SiNodedotjs">Node.js</option>
-                            <option value="FaJava">Java</option>
-                            <option value="SiN8N">n8n</option>
-                            <option value="SiAngular">Angular</option>
-                            <option value="SiJavascript">JavaScript</option>
-                            <option value="SiTailwindcss">Tailwind CSS</option>
-                            <option value="SiLaravel">Laravel</option>
-                            <option value="SiPython">Python</option>
-                            <option value="SiKotlin">Kotlin</option>
-                            <option value="SiFlutter">Flutter</option>
-                            <option value="SiMongodb">MongoDB</option>
-                            <option value="SiRust">Rust</option>
-                            <option value="SiSolidity">Solidity</option>
-                            <option value="SiDigitalocean">DigitalOcean</option>
-                            <option value="SiDocker">Docker</option>
-                            <option value="FaAws">AWS</option>
-                          </select>
-                        </div>
-
-                        <div className="md:col-span-4 flex flex-col gap-1">
+                      <div className="flex items-center justify-between gap-4 pr-6">
+                        <div className="flex-1 flex flex-col gap-1">
                           <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Upload Custom Logo</label>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             <label className="px-3 py-1.5 bg-white border border-neutral-200 hover:border-primary/50 text-neutral-700 text-xs font-semibold rounded-lg cursor-pointer transition-colors flex items-center gap-1.5 shrink-0 shadow-sm">
                               <Upload className="w-3.5 h-3.5 text-primary" />
                               <span>Upload Image</span>
@@ -1408,13 +1398,65 @@ export default function AdminDashboard() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Description</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Description & Bullet Points</label>
+                        <div className="flex items-center gap-1 bg-neutral-200/80 p-1 rounded-lg">
+                          <button
+                            type="button"
+                            title="Add Bold Text"
+                            onClick={() => {
+                              const prev = item.desc || "";
+                              handleListItemChange("services", idx, "desc", prev + " **bold text**");
+                            }}
+                            className="px-2 py-0.5 text-xs font-bold bg-white text-neutral-800 rounded hover:bg-neutral-100 transition-colors cursor-pointer"
+                          >
+                            B
+                          </button>
+                          <button
+                            type="button"
+                            title="Add Italic Text"
+                            onClick={() => {
+                              const prev = item.desc || "";
+                              handleListItemChange("services", idx, "desc", prev + " *italic text*");
+                            }}
+                            className="px-2 py-0.5 text-xs italic font-serif bg-white text-neutral-800 rounded hover:bg-neutral-100 transition-colors cursor-pointer"
+                          >
+                            I
+                          </button>
+                          <button
+                            type="button"
+                            title="Add Bullet Point"
+                            onClick={() => {
+                              const prev = item.desc || "";
+                              const prefix = prev.endsWith("\n") || !prev ? "" : "\n";
+                              handleListItemChange("services", idx, "desc", prev + prefix + "• ");
+                            }}
+                            className="px-2.5 py-0.5 text-xs font-sans bg-white text-neutral-800 rounded hover:bg-neutral-100 transition-colors cursor-pointer flex items-center gap-1"
+                          >
+                            <span>•</span> <span>Bullet</span>
+                          </button>
+                        </div>
+                      </div>
                       <textarea 
-                        rows={2}
+                        rows={4}
+                        placeholder={"• Full-cycle product development (MVP to scale)\n• Web, mobile, and SaaS application engineering\n• Cloud-native, API-first architectures"}
                         value={item.desc || ""}
                         onChange={(e) => handleListItemChange("services", idx, "desc", e.target.value)}
-                        className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none"
+                        className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none font-sans leading-relaxed"
                       />
+                      <p className="text-[11px] text-neutral-400 mt-1">Each line or '•' becomes a bullet point on the website. Use **bold** or *italic* for formatted text.</p>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Page Link / URL (Optional)</label>
+                      <input 
+                        type="text"
+                        placeholder="e.g. /services/ai-engineering or https://..."
+                        value={item.link || ""}
+                        onChange={(e) => handleListItemChange("services", idx, "link", e.target.value)}
+                        className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
+                      />
+                      <p className="text-[11px] text-neutral-400 mt-1">If set, this link will be applied to the service card on the front page and added to the slide drawer menu.</p>
                     </div>
                   </div>
                 ))}
@@ -1544,7 +1586,7 @@ export default function AdminDashboard() {
                   <p className="text-xs text-secondary-text mt-1">Configure showcase cards, tags, descriptions, and metrics.</p>
                 </div>
                 <button
-                  onClick={() => addListItem("showcase", { title: "New Project", desc: "Project description.", tags: ["SaaS"], metrics: [["Label", "Value"], ["Label", "Value"]], image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800" })}
+                  onClick={() => addListItem("showcase", { title: "New Project", desc: "Project description.", tags: ["SaaS"], image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800" })}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Project
@@ -1626,46 +1668,7 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border/40 pt-3">
-                      <div>
-                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Metric 1</span>
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            placeholder="Label (e.g. Latency)" 
-                            value={item.metrics?.[0]?.[0] || ""}
-                            onChange={(e) => updateShowcaseMetric(idx, 0, 0, e.target.value)}
-                            className="w-1/2 bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-3 py-2 text-xs text-neutral-900 outline-none"
-                          />
-                          <input 
-                            type="text" 
-                            placeholder="Value (e.g. 12ms)" 
-                            value={item.metrics?.[0]?.[1] || ""}
-                            onChange={(e) => updateShowcaseMetric(idx, 0, 1, e.target.value)}
-                            className="w-1/2 bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-3 py-2 text-xs text-neutral-900 outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Metric 2</span>
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            placeholder="Label (e.g. Throughput)" 
-                            value={item.metrics?.[1]?.[0] || ""}
-                            onChange={(e) => updateShowcaseMetric(idx, 1, 0, e.target.value)}
-                            className="w-1/2 bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-3 py-2 text-xs text-neutral-900 outline-none"
-                          />
-                          <input 
-                            type="text" 
-                            placeholder="Value (e.g. 15k/sec)" 
-                            value={item.metrics?.[1]?.[1] || ""}
-                            onChange={(e) => updateShowcaseMetric(idx, 1, 1, e.target.value)}
-                            className="w-1/2 bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-3 py-2 text-xs text-neutral-900 outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
+
 
                     <div>
                       <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Project Image</label>
@@ -2017,7 +2020,19 @@ export default function AdminDashboard() {
                         placeholder="e.g. Payment APIs, Digital Wallets, KYC / AML"
                         className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none"
                       />
-                      <p className="text-[10px] text-neutral-400 mt-1.5">These appear as chips on the website. Separate each tag with a comma.</p>
+                      <p className="text-[10px] text-neutral-400 mt-1.5">These appear as capability chips in the side drawer and homepage. Separate each tag with a comma.</p>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Industry Page Link / URL (Optional)</label>
+                      <input
+                        type="text"
+                        value={item.link || ""}
+                        onChange={(e) => handleListItemChange("industries", idx, "link", e.target.value)}
+                        placeholder="e.g. /industries/construction or https://..."
+                        className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none"
+                      />
+                      <p className="text-[10px] text-neutral-400 mt-1">If set, clicking tags or cards for this industry in the side drawer and homepage will open this page URL.</p>
                     </div>
 
                     <div>
@@ -2924,7 +2939,107 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* Tab: Social Links */}
+          {activeTab === "socialLinks" && (
+            <div className="flex flex-col gap-6">
+              <div className="flex justify-between items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-bold font-headline text-foreground">Social Links</h2>
+                  <p className="text-xs text-secondary-text mt-1">Manage your social profile links. These are used site-wide — footer, drawer, and anywhere else they appear.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const updated = [...(content.socialLinks || [])];
+                    updated.push({ platform: "LinkedIn", href: "https://linkedin.com/company/nitwebs", icon: "linkedin" });
+                    setContent({ ...content, socialLinks: updated });
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all cursor-pointer shadow"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Social Link
+                </button>
+              </div>
+
+              <div className="bg-white border border-border rounded-xl p-5 sm:p-6 flex flex-col gap-4">
+                {(!content.socialLinks || content.socialLinks.length === 0) && (
+                  <p className="text-xs text-secondary-text text-center py-6">No social links added yet. Click "Add Social Link" to get started.</p>
+                )}
+                {(content.socialLinks || []).map((soc: any, idx: number) => (
+                  <div key={idx} className="bg-neutral-50 border border-border/80 rounded-xl p-4 flex gap-4 items-center relative">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
+                      <div>
+                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Platform Name</label>
+                        <input
+                          type="text"
+                          value={soc.platform || ""}
+                          onChange={(e) => {
+                            const updated = [...content.socialLinks];
+                            updated[idx] = { ...updated[idx], platform: e.target.value };
+                            setContent({ ...content, socialLinks: updated });
+                          }}
+                          placeholder="e.g. LinkedIn"
+                          className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-lg px-3 py-1.5 text-xs text-neutral-900 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Icon</label>
+                        <select
+                          value={soc.icon || "linkedin"}
+                          onChange={(e) => {
+                            const updated = [...content.socialLinks];
+                            updated[idx] = { ...updated[idx], icon: e.target.value };
+                            setContent({ ...content, socialLinks: updated });
+                          }}
+                          className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-lg px-3 py-1.5 text-xs text-neutral-900 outline-none cursor-pointer"
+                        >
+                          <option value="linkedin">LinkedIn</option>
+                          <option value="twitter">Twitter</option>
+                          <option value="xtwitter">X (Twitter)</option>
+                          <option value="github">GitHub</option>
+                          <option value="instagram">Instagram</option>
+                          <option value="youtube">YouTube</option>
+                          <option value="globe">Globe (Generic)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Profile URL</label>
+                        <input
+                          type="url"
+                          value={soc.href || ""}
+                          onChange={(e) => {
+                            const updated = [...content.socialLinks];
+                            updated[idx] = { ...updated[idx], href: e.target.value };
+                            setContent({ ...content, socialLinks: updated });
+                          }}
+                          placeholder="https://linkedin.com/company/..."
+                          className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-lg px-3 py-1.5 text-xs text-neutral-900 outline-none font-mono"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updated = [...content.socialLinks];
+                        updated.splice(idx, 1);
+                        setContent({ ...content, socialLinks: updated });
+                      }}
+                      className="text-neutral-400 hover:text-red-500 transition-colors p-1 cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleSave}
+                className="self-start inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-semibold rounded-full hover:opacity-90 shadow-sm cursor-pointer transition-all"
+              >
+                <Save className="w-3.5 h-3.5" /> Save Social Links
+              </button>
+            </div>
+          )}
+
           {/* Tab: Dynamic Pages Builder */}
+
           {activeTab === "pages" && (
             <div className="flex flex-col gap-6">
               {!editingPage ? (
@@ -4292,6 +4407,164 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Tab: Team Gallery */}
+          {activeTab === "gallery" && (
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-bold font-headline text-neutral-900">Life at Nitwebs — Team Gallery</h2>
+                <p className="text-xs text-neutral-600 mt-1">
+                  Upload photos of team outings, trips, celebrations, and office moments to feature in the "Life at Nitwebs" section.
+                </p>
+              </div>
+
+              {/* Upload Form */}
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (!newPhotoFile) return alert("Please select an image file.");
+                setUploadingPhoto(true);
+                const token = localStorage.getItem("adminToken");
+                const formData = new FormData();
+                formData.append("image", newPhotoFile);
+                formData.append("caption", newPhotoCaption);
+                formData.append("category", newPhotoCategory);
+
+                fetch(`${API_BASE}/gallery`, {
+                  method: "POST",
+                  headers: { "Authorization": `Bearer ${token}` },
+                  body: formData
+                })
+                  .then(res => res.json())
+                  .then(data => {
+                    if (data.photo) {
+                      setNewPhotoFile(null);
+                      setNewPhotoCaption("");
+                      setNewPhotoCategory("office");
+                      setSaveSuccess(true);
+                      setTimeout(() => setSaveSuccess(false), 3000);
+                      fetchGalleryPhotos();
+                    } else {
+                      alert(data.message || "Upload failed");
+                    }
+                  })
+                  .catch(err => alert(err.message))
+                  .finally(() => setUploadingPhoto(false));
+              }} className="bg-neutral-50 border border-neutral-200 rounded-xl p-5 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-primary" /> Upload New Team Photo
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">
+                      Photo File (JPG, PNG, WEBP)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setNewPhotoFile(e.target.files?.[0] || null)}
+                      className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 text-xs text-neutral-900 outline-none file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary cursor-pointer"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">
+                      Caption / Description (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newPhotoCaption}
+                      onChange={(e) => setNewPhotoCaption(e.target.value)}
+                      placeholder="e.g. Annual Mountain Retreat & Camping 🏕️"
+                      className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-2.5 text-xs text-neutral-900 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={uploadingPhoto || !newPhotoFile}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-semibold rounded-full hover:opacity-90 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {uploadingPhoto ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" /> Add Photo to Gallery
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* Gallery Photos Grid */}
+              <div className="border-t border-border pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-neutral-900">
+                    Uploaded Photos ({galleryPhotos.length})
+                  </h3>
+                  <button
+                    onClick={fetchGalleryPhotos}
+                    className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {galleryLoading ? (
+                  <div className="py-12 flex justify-center items-center">
+                    <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : galleryPhotos.length === 0 ? (
+                  <div className="py-12 text-center border border-dashed border-neutral-200 rounded-xl bg-neutral-50 p-6">
+                    <Camera className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+                    <p className="text-xs text-neutral-500 font-sans">No custom team photos uploaded yet. Public site will display default curated team photos until you upload yours.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {galleryPhotos.map((photo) => (
+                      <div key={photo._id} className="group relative bg-neutral-50 border border-neutral-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                        <div className="relative aspect-[4/3] bg-neutral-900 overflow-hidden">
+                          <img
+                            src={photo.url.startsWith("http") ? photo.url : `http://localhost:5000${photo.url}`}
+                            alt={photo.caption}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        <div className="p-3 flex items-center justify-between gap-2 border-t border-neutral-200 bg-white">
+                          <p className="text-xs font-medium text-neutral-800 truncate flex-1" title={photo.caption}>
+                            {photo.caption || "No caption"}
+                          </p>
+                          <button
+                            onClick={() => {
+                              if (!confirm("Delete this photo permanently?")) return;
+                              const token = localStorage.getItem("adminToken");
+                              fetch(`${API_BASE}/gallery/${photo._id}`, {
+                                method: "DELETE",
+                                headers: { "Authorization": `Bearer ${token}` }
+                              })
+                                .then(res => res.json())
+                                .then(() => fetchGalleryPhotos())
+                                .catch(err => alert(err.message));
+                            }}
+                            className="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                            title="Delete photo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

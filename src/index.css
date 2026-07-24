@@ -22,12 +22,12 @@
 }
 
 .dark {
-  --background: 240 10% 3.9%;
-  --surface: 240 10% 7%;
+  --background: 263 21% 7.5%;
+  --surface: 263 18% 11.5%;
   --foreground: 0 0% 98%;
   --secondary-text: 240 5% 64.9%;
-  --muted: 240 5.9% 10%;
-  --border: 240 5.9% 15%;
+  --muted: 263 15% 15%;
+  --border: 263 15% 19%;
   --primary: 250 79.3% 65%;
   --primary-tint: 250 40% 12%;
   --success: 160 78% 44%;
@@ -72,9 +72,10 @@ html.lenis {
 
 /* Flat bordered card */
 .card-panel {
-  background: hsl(var(--background));
+  background: hsl(var(--surface) / 0.6);
+  backdrop-filter: blur(8px);
   border: 1px solid hsl(var(--border));
-  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
 }
 
 .card-panel:hover {
@@ -115,12 +116,28 @@ html.lenis {
   }
 }
 
+@keyframes marquee-reverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
 .animate-marquee {
   display: flex;
   width: max-content;
-  animation: marquee 28s linear infinite;
+  animation: marquee 80s linear infinite;
 }
 
-.marquee-container:hover .animate-marquee {
+.animate-marquee-reverse {
+  display: flex;
+  width: max-content;
+  animation: marquee-reverse 80s linear infinite;
+}
+
+.marquee-container:hover .animate-marquee,
+.marquee-container:hover .animate-marquee-reverse {
   animation-play-state: paused;
 }

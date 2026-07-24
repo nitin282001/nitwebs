@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getApiUrl } from "../lib/api";
 import { 
   FaLinkedin, 
   FaTwitter, 
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import NitwebsLogo from "./NitwebsLogo";
 import GridDivider from "./GridDivider";
+import { useIntroAnimation } from "../context/IntroContext";
 
 interface FooterLink {
   label: string;
@@ -100,18 +102,20 @@ const iconMap: Record<string, any> = {
   youtube: FaYoutube
 };
 
-export default function Footer({ logoConfig }: FooterProps) {
+export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
+  const { logoConfig: contextLogoConfig, setLogoConfig } = useIntroAnimation();
+  const effectiveLogoConfig = propsLogoConfig || contextLogoConfig;
   const [footerData, setFooterData] = useState<FooterData>(DEFAULT_FOOTER);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/footer")
+    // Fetch footer structure (columns, tagline, etc.)
+    fetch(getApiUrl("/footer"))
       .then((res) => {
         if (!res.ok) throw new Error("Footer API offline");
         return res.json();
       })
       .then((data) => {
-        // Only set state if we fetched valid data
         if (data.columns && data.columns.length > 0) {
           setFooterData(data);
         }
@@ -119,12 +123,31 @@ export default function Footer({ logoConfig }: FooterProps) {
       .catch((err) => {
         console.warn("Footer API offline, using fallback static footer defaults:", err.message);
       });
+
+    // Override social links from the global /api/content socialLinks field
+    fetch(getApiUrl("/content"))
+      .then((res) => {
+        if (!res.ok) throw new Error("Content API offline");
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data.socialLinks) && data.socialLinks.length > 0) {
+          setFooterData((prev) => ({ ...prev, social: data.socialLinks }));
+        }
+        if (data?.logo) {
+          setLogoConfig(data.logo);
+        }
+      })
+      .catch(() => {
+        // Silently fall back to footer API social links
+      });
   }, []);
 
   const getSocialIcon = (iconName: string) => {
     const key = iconName.toLowerCase();
     return iconMap[key] || Globe;
   };
+
 
   const handleScrollToSection = (targetId: string) => {
     const cleanId = targetId ? targetId.replace(/^#/, "") : "";
@@ -171,7 +194,7 @@ export default function Footer({ logoConfig }: FooterProps) {
         {/* Column 1: Logo & Tagline */}
         <div className="lg:col-span-2 flex flex-col items-start gap-4">
           <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <NitwebsLogo logoConfig={logoConfig} />
+            <NitwebsLogo logoConfig={effectiveLogoConfig} />
           </Link>
           <p className="text-secondary-text text-sm max-w-sm leading-relaxed mt-2">
             {footerData.tagline}

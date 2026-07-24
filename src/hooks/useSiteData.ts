@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const API_BASE = "http://localhost:5000/api";
+import { getApiUrl } from "../lib/api";
 
 export function useSiteData() {
   const [siteData, setSiteData] = useState<any>(null);
@@ -9,7 +9,7 @@ export function useSiteData() {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const res = await fetch(`${API_BASE}/content`);
+        const res = await fetch(getApiUrl("/content"));
         if (!res.ok) throw new Error("API content failed");
         const data = await res.json();
         setSiteData(data);

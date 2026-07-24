@@ -2,7 +2,6 @@ import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import NitwebsLogo from './NitwebsLogo';
-import ThemeToggle from './ThemeToggle';
 import './StaggeredMenu.css';
 
 export interface StaggeredMenuItem {
@@ -37,7 +36,6 @@ export interface StaggeredMenuProps {
   onMenuOpen?: () => void;
   onMenuClose?: () => void;
   onScrollToSection?: (targetId: string) => void;
-  showThemeToggle?: boolean;
 }
 
 export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
@@ -57,10 +55,10 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   onMenuOpen,
   onMenuClose,
   onScrollToSection,
-  showThemeToggle = true
 }) => {
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
+  const [scrolled, setScrolled] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
   const preLayersRef = useRef<HTMLDivElement>(null);
   const preLayerElsRef = useRef<HTMLDivElement[]>([]);
@@ -79,6 +77,13 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   const toggleBtnRef = useRef<HTMLButtonElement>(null);
   const busyRef = useRef(false);
   const itemEntranceTweenRef = useRef<gsap.core.Tween | null>(null);
+
+  useLayoutEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -394,6 +399,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
       style={accentColor ? { ['--sm-accent' as any]: accentColor } : undefined}
       data-position={position}
       data-open={open || undefined}
+      data-scrolled={scrolled || undefined}
     >
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {(() => {
@@ -523,13 +529,6 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-
-          {showThemeToggle && (
-            <div className="sm-socials" aria-label="Theme">
-              <h3 className="sm-socials-title font-mono uppercase tracking-widest text-xs">Theme</h3>
-              <ThemeToggle className="mt-3" layoutId="theme-toggle-active-mobile" />
             </div>
           )}
         </div>

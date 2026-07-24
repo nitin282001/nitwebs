@@ -1,0 +1,12 @@
+﻿Options -MultiViews
+RewriteEngine On
+
+# React SPA — serve index.html for all non-file requests
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.html [QSA,L]
+
+# Block public access to submission logs
+<Files protected_submissions.jsonl>
+  Order Allow,Deny
+  Deny from all
+</Files>

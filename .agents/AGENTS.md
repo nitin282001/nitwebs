@@ -33,3 +33,14 @@ Always adhere to the following checklist when making any code or UI edits to thi
 - `[ ]` **Interactive Elements**:
   - Form validation boxes: use high-contrast red alerts (`bg-red-50 text-red-600 border-red-100`).
   - Active button states: solid purple background (`bg-primary`) with white text and smooth shadow scaling (`hover:opacity-90 shadow-md hover:shadow-lg`).
+
+## 4. Minimalist Design & Tight Spacing Checklist
+- `[ ]` **Sleek Heading Weights**:
+  - Keep card headings, panel titles, and section headlines minimal (`font-normal font-headline`). Avoid heavy `font-bold` or `font-semibold` on card titles.
+- `[ ]` **Tight List & Item Spacing**:
+  - Keep vertical gaps between bullet points and list links small and compact (`gap-y-1.5` or `gap-y-2`, `leading-snug` / `leading-normal`). Avoid wide gaps like `gap-y-4` or loose line-heights.
+- `[ ]` **Subtle Lead Text**:
+  - In bullet lists, use `font-medium text-foreground` for lead terms rather than heavy `font-bold`.
+- `[ ]` **Clean Card Padding**:
+  - Keep panel and card inner padding compact (`p-5 sm:p-6`) to prevent bulky cards and retain a refined, modern aesthetic.
+

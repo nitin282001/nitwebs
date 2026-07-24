@@ -16,10 +16,14 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure uploads folder exists
+// Ensure uploads folders exist
 const uploadDir = path.join(__dirname, "uploads", "resumes");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
+}
+const galleryUploadDir = path.join(__dirname, "uploads", "gallery");
+if (!fs.existsSync(galleryUploadDir)) {
+  fs.mkdirSync(galleryUploadDir, { recursive: true });
 }
 
 // Configure multer storage for resumes
@@ -52,6 +56,29 @@ const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Configure multer for gallery image uploads
+const galleryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, galleryUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `gallery-${Date.now()}${ext}`);
+  }
+});
+const galleryImageFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed."), false);
+  }
+};
+const galleryUpload = multer({
+  storage: galleryStorage,
+  fileFilter: galleryImageFilter,
+  limits: { fileSize: 8 * 1024 * 1024 } // 8MB limit for photos
 });
 
 const app = express();
@@ -157,7 +184,8 @@ const siteContentSchema = new mongoose.Schema({
   theme: {
     primaryColor: { type: String, default: "#6366f1" },
     glitchColors: { type: [String], default: ["#2b4539", "#61dca3", "#61b3dc"] },
-    showThemeToggle: { type: Boolean, default: true }
+    showThemeToggle: { type: Boolean, default: true },
+    underConstruction: { type: Boolean, default: false }
   },
   showcaseHeader: {
     badge: { type: String, default: "Portfolio Showcase" },
@@ -183,7 +211,8 @@ const siteContentSchema = new mongoose.Schema({
   services: [{
     icon: String, // icon identifier
     title: String,
-    desc: String
+    desc: String,
+    link: String
   }],
   process: [{
     stage: String,
@@ -219,6 +248,22 @@ const siteContentSchema = new mongoose.Schema({
     role: String,
     review: String
   }],
+  solutionsDrawer: {
+    requireLink: { type: Boolean, default: true },
+    services: [{
+      category: String,
+      items: [{ title: String, link: String }]
+    }],
+    industries: [{
+      category: String,
+      subheading: String,
+      items: [{ title: String, link: String }]
+    }],
+    hire: [{
+      category: String,
+      items: [{ title: String, link: String }]
+    }]
+  },
   faqs: [{
     q: String,
     a: String
@@ -232,6 +277,11 @@ const siteContentSchema = new mongoose.Schema({
     name: { type: String, default: "" },
     icon: { type: String, default: "" },
     imageUrl: { type: String, default: "" }
+  }],
+  socialLinks: [{
+    platform: { type: String, default: "LinkedIn" },
+    href: { type: String, default: "#" },
+    icon: { type: String, default: "linkedin" }
   }]
 });
 const SiteContent = mongoose.model("SiteContent", siteContentSchema);
@@ -328,6 +378,20 @@ const applicationSchema = new mongoose.Schema({
 });
 const Application = mongoose.model("Application", applicationSchema);
 
+// Team Gallery Photo Schema
+const teamPhotoSchema = new mongoose.Schema({
+  url: { type: String, required: true },          // relative path: /uploads/gallery/filename.jpg
+  caption: { type: String, default: "" },
+  category: {
+    type: String,
+    enum: ["outing", "trip", "celebration", "office"],
+    default: "office"
+  },
+  order: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+});
+const TeamPhoto = mongoose.model("TeamPhoto", teamPhotoSchema);
+
 // --- Auth Middleware ---
 const verifyAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -350,6 +414,12 @@ app.use(
   "/uploads/resumes",
   verifyAdmin,
   express.static(path.join(__dirname, "uploads", "resumes"))
+);
+
+// Serve gallery images publicly (photos are meant to be public)
+app.use(
+  "/uploads/gallery",
+  express.static(path.join(__dirname, "uploads", "gallery"))
 );
 
 // --- Routes ---
@@ -420,6 +490,9 @@ app.put("/api/content", verifyAdmin, async (req, res) => {
       content.faqs = req.body.faqs || content.faqs;
       content.stats = req.body.stats || content.stats;
       content.brands = req.body.brands || content.brands;
+      if (req.body.socialLinks !== undefined) {
+        content.socialLinks = req.body.socialLinks;
+      }
     }
     await content.save();
     res.json({ message: "Content updated successfully.", content });
@@ -935,6 +1008,93 @@ app.delete("/api/admin/applications/:id", verifyAdmin, async (req, res) => {
   }
 });
 
+// --- Team Gallery API ---
+
+// 1. Public: Get all gallery photos
+app.get("/api/gallery", async (req, res) => {
+  try {
+    const photos = await TeamPhoto.find({}).sort({ order: 1, createdAt: -1 });
+    res.json(photos);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching gallery photos." });
+  }
+});
+
+// 2. Admin: Upload a new gallery photo
+app.post("/api/gallery", verifyAdmin, (req, res) => {
+  galleryUpload.single("image")(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message || "File upload failed." });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: "Please select an image file to upload." });
+    }
+    try {
+      const url = `/uploads/gallery/${req.file.filename}`;
+      const { caption, category, order } = req.body;
+      const newPhoto = new TeamPhoto({
+        url,
+        caption: caption || "",
+        category: category || "office",
+        order: order ? Number(order) : 0
+      });
+      await newPhoto.save();
+      res.json({ message: "Photo uploaded successfully.", photo: newPhoto });
+    } catch (dbErr) {
+      console.error(dbErr);
+      res.status(500).json({ message: "Database error saving photo record." });
+    }
+  });
+});
+
+// 3. Admin: Update photo metadata (caption, category, order)
+app.put("/api/gallery/:id", verifyAdmin, async (req, res) => {
+  try {
+    const { caption, category, order } = req.body;
+    const photo = await TeamPhoto.findById(req.params.id);
+    if (!photo) {
+      return res.status(404).json({ message: "Photo not found." });
+    }
+    if (caption !== undefined) photo.caption = caption;
+    if (category !== undefined) photo.category = category;
+    if (order !== undefined) photo.order = Number(order);
+
+    await photo.save();
+    res.json({ message: "Photo updated successfully.", photo });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error updating photo." });
+  }
+});
+
+// 4. Admin: Delete a photo and remove file from disk
+app.delete("/api/gallery/:id", verifyAdmin, async (req, res) => {
+  try {
+    const photo = await TeamPhoto.findById(req.params.id);
+    if (!photo) {
+      return res.status(404).json({ message: "Photo not found." });
+    }
+    // Delete file from disk if it exists locally
+    if (photo.url && photo.url.startsWith("/uploads/gallery/")) {
+      const filename = photo.url.replace("/uploads/gallery/", "");
+      const fullPath = path.join(galleryUploadDir, filename);
+      if (fs.existsSync(fullPath)) {
+        try {
+          fs.unlinkSync(fullPath);
+        } catch (unlinkErr) {
+          console.warn("Could not delete gallery file from disk:", unlinkErr);
+        }
+      }
+    }
+    await TeamPhoto.findByIdAndDelete(req.params.id);
+    res.json({ message: "Photo deleted successfully." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error deleting photo." });
+  }
+});
+
 // Auto-seed Default Super Admin on startup if none exists
 const seedDefaultAdmin = async () => {
   try {
@@ -960,7 +1120,8 @@ const seedData = {
     mode: "text"
   },
   theme: {
-    primaryColor: "#6366f1"
+    primaryColor: "#6366f1",
+    underConstruction: false
   },
   showcaseHeader: {
     badge: "Portfolio Showcase",
@@ -1068,56 +1229,64 @@ const seedData = {
       subheading: "Building Smarter Construction Operations",
       desc: "Streamline project management, workforce operations, scheduling, compliance, and reporting with modern construction software solutions.",
       icon: "Hammer",
-      tags: ["Project Management", "Compliance", "Workforce Ops", "Scheduling"]
+      tags: ["Project Management", "Compliance", "Workforce Ops", "Scheduling"],
+      image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Healthcare",
       subheading: "Transforming Patient Care Through Technology",
       desc: "Develop secure healthcare platforms, patient portals, appointment systems, and digital solutions that improve care delivery.",
       icon: "Activity",
-      tags: ["Patient Portals", "HIPAA Secure", "Appointment Systems", "Digital Health"]
+      tags: ["Patient Portals", "HIPAA Secure", "Appointment Systems", "Digital Health"],
+      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "FinTech",
       subheading: "Powering the Future of Financial Services",
       desc: "Build reliable fintech applications, payment platforms, digital wallets, and financial software with enterprise-grade security.",
       icon: "CreditCard",
-      tags: ["Payment APIs", "Digital Wallets", "KYC / AML", "Enterprise Security"]
+      tags: ["Payment APIs", "Digital Wallets", "KYC / AML", "Enterprise Security"],
+      image: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Retail & eCommerce",
       subheading: "Creating Seamless Shopping Experiences",
       desc: "Create high-converting eCommerce platforms, inventory systems, customer portals, and omnichannel retail experiences for growth.",
       icon: "ShoppingBag",
-      tags: ["Omnichannel", "Inventory Systems", "Customer Portals", "High Conversion"]
+      tags: ["Omnichannel", "Inventory Systems", "Customer Portals", "High Conversion"],
+      image: "https://images.unsplash.com/photo-1563013544-824ae1d704d3?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Manufacturing",
       subheading: "Intelligent Systems for Modern Manufacturing",
       desc: "Optimize production workflows, inventory management, operational visibility, and business processes with intelligent manufacturing software.",
       icon: "Factory",
-      tags: ["ERP Integration", "IoT Systems", "Production Ops", "Inventory Control"]
+      tags: ["ERP Integration", "IoT Systems", "Production Ops", "Inventory Control"],
+      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Logistics & Supply Chain",
       subheading: "Connecting Every Mile of Your Supply Chain",
       desc: "Improve fleet management, shipment tracking, warehouse operations, and logistics efficiency through connected digital platforms.",
       icon: "Truck",
-      tags: ["Fleet Tracking", "Warehouse Ops", "Route Optimization", "Shipment Tracking"]
+      tags: ["Fleet Tracking", "Warehouse Ops", "Route Optimization", "Shipment Tracking"],
+      image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Real Estate",
       subheading: "Digital Solutions for Modern Real Estate",
       desc: "Develop property management systems, CRM platforms, listing portals, and digital experiences for modern real estate businesses.",
       icon: "Building2",
-      tags: ["Property CRM", "Listing Portals", "Digital Tours", "Lead Management"]
+      tags: ["Property CRM", "Listing Portals", "Digital Tours", "Lead Management"],
+      image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1200&auto=format&fit=crop"
     },
     {
       title: "Education (EdTech)",
       subheading: "Empowering Learners Through Innovation",
       desc: "Build engaging learning platforms, student portals, virtual classrooms, and education management systems for digital learning.",
       icon: "GraduationCap",
-      tags: ["LMS Platforms", "Virtual Classrooms", "Student Portals", "Assessment Tools"]
+      tags: ["LMS Platforms", "Virtual Classrooms", "Student Portals", "Assessment Tools"],
+      image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1200&auto=format&fit=crop"
     }
   ],
   showcase: [
@@ -1274,6 +1443,21 @@ const autoSeedContent = async () => {
     console.error("Error auto-seeding content:", err);
   }
 };
+
+// Serve static client files in production
+const distPath = path.join(__dirname, "..", "dist");
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  
+  // Handlers for dynamic page routing fallbacks
+  app.get("*", (req, res, next) => {
+    // If request is for an API path, pass through to normal API routes
+    if (req.path.startsWith("/api/") || req.path.startsWith("/uploads/")) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
 
 app.listen(PORT, async () => {
   await connectDB();

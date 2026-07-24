@@ -70,7 +70,7 @@ export default function CustomCursor() {
     const style = document.createElement("style");
     style.id = "custom-cursor-hide-default";
     style.innerHTML = `
-      body, a, button, input, select, textarea, [role="button"] {
+      *, *::before, *::after {
         cursor: none !important;
       }
     `;
@@ -93,7 +93,7 @@ export default function CustomCursor() {
     <>
       {/* Outer lagging hollow circular ring */}
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary pointer-events-none z-[9999]"
+        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary pointer-events-none z-[999999]"
         style={{
           x: cursorX,
           y: cursorY,
@@ -108,7 +108,7 @@ export default function CustomCursor() {
       />
       {/* Inner instant point cursor */}
       <motion.div
-        className="fixed top-0 left-0 w-2 h-2 rounded-full bg-primary pointer-events-none z-[9999]"
+        className="fixed top-0 left-0 w-2 h-2 rounded-full bg-primary pointer-events-none z-[999999]"
         style={{
           x: mouseX,
           y: mouseY,
