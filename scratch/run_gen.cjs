@@ -1,0 +1,1 @@
+const make = require('./make_api.cjs'); console.log('CommonJS load successful!');
