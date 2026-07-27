@@ -24,11 +24,9 @@ export default function FaqSection({
 }: FaqSectionProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
-  const defaultFaqs = faqs.length > 0 ? faqs : [
-    { q: "How long does a project take?", a: "Standard enterprise applications and AI pipelines are shipped within 8 to 12 weeks. We work on strict bi-weekly sprint delivery periods." },
-    { q: "Do you hand over full source repositories?", a: "Yes. Every line of code we write is fully handed over in Git repositories with complete ownership rights." },
-    { q: "How does dedicated developer embedding work?", a: "We embed senior programmers directly inside your Slack and GitHub workflows to speed up your roadmap." }
-  ];
+  if (!faqs || faqs.length === 0) {
+    return null;
+  }
 
   return (
     <section className="relative w-full py-24 px-6 overflow-hidden">
@@ -58,7 +56,7 @@ export default function FaqSection({
         </div>
 
         <div className="flex flex-col gap-4">
-          {defaultFaqs.map((faq, idx) => {
+          {faqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (
               <Reveal key={idx}>

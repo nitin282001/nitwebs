@@ -21,11 +21,9 @@ export default function TestimonialsSection({
   desc = "See what leading teams say about our bi-weekly sprint deliveries.",
   testimonials = []
 }: TestimonialsSectionProps) {
-  const defaultTestimonials = testimonials.length > 0 ? testimonials : [
-    { name: "John Carter", role: "CEO, Zenith SaaS", review: "Nitwebs delivered an AI analytics suite that exceeded our expectations. Extremely responsive team." },
-    { name: "Sarah Vance", role: "CTO, Nova Financial", review: "Their developers wrote highly structured TypeScript libraries. Saved our native app rollout timeline." },
-    { name: "Devon Reed", role: "VP of Product, Aether CRM", review: "Sprint deliveries were clean, documentation was perfect, staging URLs worked. Five-star partnership." }
-  ];
+  if (!testimonials || testimonials.length === 0) {
+    return null;
+  }
 
   return (
     <section className="relative w-full py-24 px-6 overflow-hidden">
@@ -55,7 +53,7 @@ export default function TestimonialsSection({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {defaultTestimonials.map((item, idx) => (
+          {testimonials.map((item, idx) => (
             <Reveal key={idx} className="h-full">
               <div className="border border-border/80 bg-surface/30 backdrop-blur-md rounded-2xl p-6 flex flex-col justify-between h-full hover:border-primary/50 transition-all duration-300">
                 <div className="flex flex-col gap-4">

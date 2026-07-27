@@ -60,11 +60,9 @@ export default function CardsSection({
     return ICON_MAP[iconName] || Cpu;
   };
 
-  const defaultCards = cards.length > 0 ? cards : [
-    { icon: "Cpu", title: "AI Engineering", desc: "Build intelligent systems powered by machine learning." },
-    { icon: "Layers", title: "SaaS Platforms", desc: "Scale backend systems with responsive frontend designs." },
-    { icon: "Globe", title: "Mobile & Web", desc: "Deliver progressive, robust, and beautiful applications." }
-  ];
+  if (!cards || cards.length === 0) {
+    return null;
+  }
 
   return (
     <section className="relative w-full py-24 px-6 overflow-hidden">
@@ -94,7 +92,7 @@ export default function CardsSection({
         </div>
 
         <StaggerGrid className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {defaultCards.map((card, idx) => {
+          {cards.map((card, idx) => {
             const Icon = getIcon(card.icon);
             return (
               <motion.div

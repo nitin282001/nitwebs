@@ -300,7 +300,14 @@ export default function AdminDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (parseErr) {
+        console.error("Auth API Raw Response:", text);
+        throw new Error("Server error. Please check PHP backend.");
+      }
       if (!res.ok) {
         throw new Error(data.message || "Login failed");
       }
@@ -332,7 +339,14 @@ export default function AdminDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "verify-otp", username, otp: otpCode })
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (parseErr) {
+        console.error("Auth API Raw Response:", text);
+        throw new Error("Server error during OTP verification.");
+      }
       if (!res.ok) {
         throw new Error(data.message || "OTP verification failed");
       }

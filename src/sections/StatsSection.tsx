@@ -14,12 +14,9 @@ interface StatsSectionProps {
 }
 
 export default function StatsSection({ stats = [] }: StatsSectionProps) {
-  const defaultStats = stats.length > 0 ? stats : [
-    { value: "150", suffix: "+", label: "Projects Delivered" },
-    { value: "6", suffix: "+", label: "Years Experience" },
-    { value: "20", suffix: "+", label: "Technologies" },
-    { value: "98", suffix: "%", label: "Satisfaction" }
-  ];
+  if (!stats || stats.length === 0) {
+    return null;
+  }
 
   return (
     <section className="relative w-full py-16 px-6 overflow-hidden">
@@ -27,7 +24,7 @@ export default function StatsSection({ stats = [] }: StatsSectionProps) {
 
       <div className="max-w-6xl mx-auto relative z-10">
         <StaggerGrid className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {defaultStats.map((stat, idx) => (
+          {stats.map((stat, idx) => (
             <motion.div
               key={idx}
               className="flex flex-col items-center md:items-start text-center md:text-left"

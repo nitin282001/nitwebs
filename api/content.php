@@ -77,7 +77,7 @@ $defaultContent = [
         "text" => "Nitwebs"
     ],
     "seo" => [
-        "metaTitle" => "Nitwebs | AI-first Software Development & SaaS Solutions Company",
+        "metaTitle" => "Nitwebs",
         "metaDescription" => "Nitwebs is an AI-first software development company building custom software, AI agents, mobile apps, and scalable SaaS platforms worldwide.",
         "metaKeywords" => "AI software development, SaaS engineering, custom software, AI agents, cloud infrastructure, mobile apps",
         "ogImage" => "",
