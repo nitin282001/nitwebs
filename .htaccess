@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Allow direct access to /api/ endpoints
+  RewriteRule ^api/(.*)$ api/$1 [L]
+
+  # Serve root request from dist/index.html
+  RewriteRule ^$ dist/index.html [L]
+
+  # Serve static files from dist/ if they exist
+  RewriteCond %{DOCUMENT_ROOT}/dist/$1 -f
+  RewriteRule ^(.*)$ dist/$1 [L]
+
+  # Fallback React SPA routing to dist/index.html for dynamic pages
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/api/
+  RewriteRule ^(.*)$ dist/index.html [QSA,L]
+</IfModule>

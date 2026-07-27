@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Apply the saved/system theme before first paint to avoid a flash of
+         the wrong theme. Mirrors ThemeContext.tsx's storage key and logic. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("nitwebs_theme");
+          var theme = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+          var resolved =
+            theme === "system"
+              ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+              : theme;
+          if (resolved === "dark") document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- Primary on-page SEO -->
+    <title>AI Software Development & SaaS Solutions Company | Nitwebs</title>
+    <meta
+      name="description"
+      content="Nitwebs is an AI-first software development company building custom software and scalable SaaS applications for businesses worldwide — AI engineering, automation, and cloud infrastructure done right."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://nitwebs.com/" />
+
+    <!-- Open Graph / Facebook, LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nitwebs.com/" />
+    <meta property="og:site_name" content="Nitwebs" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="AI Software Development & SaaS Solutions Company | Nitwebs" />
+    <meta
+      property="og:description"
+      content="AI-first software development and SaaS application engineering for ambitious businesses worldwide — AI products, custom software, automation, and cloud infrastructure."
+    />
+    <!-- TODO: replace with a real 1200x630 branded social-share image at /og-image.jpg -->
+    <meta property="og:image" content="https://nitwebs.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AI Software Development & SaaS Solutions Company | Nitwebs" />
+    <meta
+      name="twitter:description"
+      content="AI-first software development and SaaS application engineering for ambitious businesses worldwide — AI products, custom software, automation, and cloud infrastructure."
+    />
+    <meta name="twitter:image" content="https://nitwebs.com/og-image.jpg" />
+
+    <!-- Performance: third-party font host -->
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" />
+
+    <!-- Structured data: Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Nitwebs",
+        "url": "https://nitwebs.com/",
+        "logo": "https://nitwebs.com/favicon.svg",
+        "description": "AI-first software development company building custom software, SaaS applications, automation, and cloud infrastructure for businesses worldwide.",
+        "email": "sales@nitwebs.com",
+        "telephone": "+91-911-555-6455",
+        "address": [
+          {
+            "@type": "PostalAddress",
+            "streetAddress": "26 A, Model Town",
+            "addressLocality": "Ludhiana",
+            "addressRegion": "Punjab",
+            "addressCountry": "IN"
+          },
+          {
+            "@type": "PostalAddress",
+            "streetAddress": "Techzone 4, Greater Noida West",
+            "addressLocality": "Greater Noida",
+            "addressRegion": "Uttar Pradesh",
+            "addressCountry": "IN"
+          }
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "sales",
+          "email": "sales@nitwebs.com",
+          "telephone": "+91-911-555-6455"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Nitwebs",
+        "url": "https://nitwebs.com/"
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-CuTDaTwh.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DMZEpgOi.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
