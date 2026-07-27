@@ -10,6 +10,22 @@ lerna-debug.log*
 node_modules
 *.local
 
+# Production Environment & Secret Config Protection
+api/config.php
+
+# Agent & Dev Tooling (Excluded from Production Server)
+.agents/
+.claude/
+.github/
+docs/
+scratch/
+server/
+scripts/
+.env.local.example
+CMS_PLAN.md
+HOSTINGER_DEPLOYMENT.md
+jsrepo.config.ts
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,15 +38,8 @@ node_modules
 *.sw?
 .superpowers/
 
-# Backend & Data
-server/node_modules
-server/db_data
-server/uploads
-*.env
-*.env.local
-scratch/
+# Data & Archives
 api.zip
 *.sql
-
-
-node_modules
+*.env
+*.env.local
