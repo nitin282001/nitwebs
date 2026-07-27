@@ -37,6 +37,7 @@ jobs:
           source: "dist/*"
           target: "public_html"
           strip_components: 1
+          overwrite: true
 
       - name: Deploy API Backend via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -48,3 +49,4 @@ jobs:
           source: "api/*"
           target: "public_html/api"
           strip_components: 1
+          overwrite: true
