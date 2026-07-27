@@ -1,4 +1,4 @@
-name: Deploy Nitwebs to Hostinger via SSH / SFTP
+name: Deploy Nitwebs to Hostinger via SSH / rsync
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   web-deploy:
-    name: Build & Deploy via SSH / SFTP
+    name: Build & Deploy via SSH / rsync
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -27,26 +27,27 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      - name: Deploy Frontend Assets via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+      - name: Deploy Frontend Assets via SSH rsync
+        uses: easingthemes/ssh-deploy@v5.1.0
         with:
-          server: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 65002 }}
-          local_path: './dist/*'
-          remote_path: './public_html/'
-          sftp_only: true
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PORT: ${{ secrets.SSH_PORT || 65002 }}
+          PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SOURCE: "dist/"
+          TARGET: "public_html/"
+          ARGS: "-avz --delete"
 
-      - name: Deploy API Backend via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+      - name: Deploy API Backend via SSH rsync
+        uses: easingthemes/ssh-deploy@v5.1.0
         with:
-          server: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 65002 }}
-          local_path: './api/*'
-          remote_path: './public_html/api/'
-          sftp_only: true
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PORT: ${{ secrets.SSH_PORT || 65002 }}
+          PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SOURCE: "api/"
+          TARGET: "public_html/api/"
+          EXCLUDE: "/uploads/, config.php"
+          ARGS: "-avz"
