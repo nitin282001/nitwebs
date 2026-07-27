@@ -354,7 +354,7 @@ export default function SolutionsDrawer({
 
                 {activeTab === "industries" && (
                   <div className="flex flex-col gap-6">
-                    {(siteData?.industries || [
+                    {((Array.isArray(siteData?.industries) && siteData.industries.length > 0) ? siteData.industries : [
                       {
                         title: "Industrial, Mobility & Infrastructure",
                         subheading: "Manufacturing, Construction, Automotive",

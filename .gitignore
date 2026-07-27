@@ -30,4 +30,8 @@ server/db_data
 server/uploads
 *.env
 *.env.local
+scratch/
+api.zip
+*.sql
+
 

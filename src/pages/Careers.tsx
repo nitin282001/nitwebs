@@ -18,9 +18,10 @@ export default function Careers() {
         const res = await fetch(getApiUrl("/jobs"));
         if (!res.ok) throw new Error("Failed to load jobs");
         const data = await res.json();
-        setJobs(data);
+        setJobs(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error(err);
+        setJobs([]);
       } finally {
         setLoading(false);
       }

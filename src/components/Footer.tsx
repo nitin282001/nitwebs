@@ -30,7 +30,7 @@ interface FooterColumn {
 interface FooterSocialLink {
   platform: string;
   href: string;
-  icon: string;
+  icon?: string;
 }
 
 interface FooterBottomLink {
@@ -40,8 +40,8 @@ interface FooterBottomLink {
 
 interface FooterPlatform {
   name: string;
-  imageUrl: string;
-  link: string;
+  imageUrl?: string;
+  link?: string;
 }
 
 interface FooterProps {
@@ -81,8 +81,8 @@ const DEFAULT_FOOTER: FooterData = {
     }
   ],
   social: [
-    { platform: "LinkedIn", href: "#", icon: "Linkedin" },
-    { platform: "Twitter",  href: "#", icon: "Twitter" }
+    { platform: "LinkedIn", href: "https://linkedin.com", icon: "Linkedin" },
+    { platform: "Twitter",  href: "https://twitter.com", icon: "Twitter" }
   ],
   bottomLinks: [
     { label: "Privacy Policy",  href: "#" },
@@ -116,15 +116,22 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
         return res.json();
       })
       .then((data) => {
-        if (data.columns && data.columns.length > 0) {
-          setFooterData(data);
+        if (data && typeof data === "object") {
+          setFooterData({
+            tagline: data.tagline || DEFAULT_FOOTER.tagline,
+            columns: (Array.isArray(data.columns) && data.columns.length > 0) ? data.columns : DEFAULT_FOOTER.columns,
+            social: (Array.isArray(data.social) && data.social.length > 0) ? data.social : DEFAULT_FOOTER.social,
+            bottomLinks: (Array.isArray(data.bottomLinks) && data.bottomLinks.length > 0) ? data.bottomLinks : DEFAULT_FOOTER.bottomLinks,
+            platforms: Array.isArray(data.platforms) ? data.platforms : DEFAULT_FOOTER.platforms,
+            copyright: data.copyright || DEFAULT_FOOTER.copyright
+          });
         }
       })
       .catch((err) => {
         console.warn("Footer API offline, using fallback static footer defaults:", err.message);
       });
 
-    // Override social links from the global /api/content socialLinks field
+    // Override social links from the global /api/content socialLinks field if available
     fetch(getApiUrl("/content"))
       .then((res) => {
         if (!res.ok) throw new Error("Content API offline");
@@ -132,7 +139,14 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
       })
       .then((data) => {
         if (Array.isArray(data.socialLinks) && data.socialLinks.length > 0) {
-          setFooterData((prev) => ({ ...prev, social: data.socialLinks }));
+          setFooterData((prev) => ({ 
+            ...prev, 
+            social: data.socialLinks.map((s: any) => ({
+              platform: s.platform || "Social",
+              href: s.href || s.url || "#",
+              icon: s.icon || s.platform
+            }))
+          }));
         }
         if (data?.logo) {
           setLogoConfig(data.logo);
@@ -141,13 +155,12 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
       .catch(() => {
         // Silently fall back to footer API social links
       });
-  }, []);
+  }, [setLogoConfig]);
 
-  const getSocialIcon = (iconName: string) => {
-    const key = iconName.toLowerCase();
+  const getSocialIcon = (iconName?: string, platform?: string) => {
+    const key = (iconName || platform || "").toLowerCase();
     return iconMap[key] || Globe;
   };
-
 
   const handleScrollToSection = (targetId: string) => {
     const cleanId = targetId ? targetId.replace(/^#/, "") : "";
@@ -184,12 +197,17 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
     }
   };
 
+  const socialList = (Array.isArray(footerData?.social) && footerData.social.length > 0) ? footerData.social : DEFAULT_FOOTER.social;
+  const columnsList = (Array.isArray(footerData?.columns) && footerData.columns.length > 0) ? footerData.columns : DEFAULT_FOOTER.columns;
+  const bottomLinksList = (Array.isArray(footerData?.bottomLinks) && footerData.bottomLinks.length > 0) ? footerData.bottomLinks : DEFAULT_FOOTER.bottomLinks;
+  const platformsList = Array.isArray(footerData?.platforms) ? footerData.platforms : [];
+
   return (
     <footer className="relative bg-surface/30">
       <GridDivider />
       
       {/* Top multi-column section */}
-      <div className={`max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-12 ${footerData.platforms?.length > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+      <div className={`max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-12 ${platformsList.length > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
         
         {/* Column 1: Logo & Tagline */}
         <div className="lg:col-span-2 flex flex-col items-start gap-4">
@@ -197,17 +215,17 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
             <NitwebsLogo logoConfig={effectiveLogoConfig} />
           </Link>
           <p className="text-secondary-text text-sm max-w-sm leading-relaxed mt-2">
-            {footerData.tagline}
+            {footerData?.tagline || DEFAULT_FOOTER.tagline}
           </p>
           
           {/* Social Row */}
           <div className="flex gap-3.5 mt-4">
-            {footerData.social.map((soc) => {
-              const Icon = getSocialIcon(soc.icon);
+            {socialList.map((soc, idx) => {
+              const Icon = getSocialIcon(soc.icon, soc.platform);
               return (
                 <a 
-                  key={soc.platform} 
-                  href={soc.href} 
+                  key={soc.platform + idx} 
+                  href={soc.href || "#"} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-secondary-text hover:text-foreground hover:border-foreground transition-all duration-200"
@@ -221,17 +239,17 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
         </div>
 
         {/* Dynamic content columns */}
-        {footerData.columns.map((col, cIdx) => (
+        {columnsList.map((col, cIdx) => (
           <div key={cIdx} className="flex flex-col gap-4">
             <span className="text-xs font-mono text-primary tracking-widest uppercase mb-1">
               {col.heading}
             </span>
             <ul className="flex flex-col gap-3">
-              {col.links.map((link) => (
-                <li key={link.label}>
+              {(col.links || []).map((link, lIdx) => (
+                <li key={link.label + lIdx}>
                   <a 
-                    href={link.href} 
-                    onClick={(e) => handleLinkClick(e, link.href)}
+                    href={link.href || "#"} 
+                    onClick={(e) => handleLinkClick(e, link.href || "#")}
                     className="text-sm text-secondary-text hover:text-foreground transition-colors duration-200"
                   >
                     {link.label}
@@ -242,14 +260,14 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
           </div>
         ))}
 
-        {/* Platform / listing badges — clean borderless logos stacked cleanly */}
-        {footerData.platforms && footerData.platforms.length > 0 && (
+        {/* Platform / listing badges */}
+        {platformsList.length > 0 && (
           <div className="flex flex-col gap-4">
             <span className="text-xs font-mono text-primary tracking-widest uppercase mb-1">
               As Featured On
             </span>
             <div className="flex flex-col gap-3.5">
-              {footerData.platforms.map((platform, idx) => {
+              {platformsList.map((platform, idx) => {
                 const badge = (
                   <div className="py-1 flex items-center justify-start transition-all duration-200 hover:scale-[1.02] origin-left">
                     {platform.imageUrl ? (
@@ -284,15 +302,15 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
       {/* Bottom bar */}
       <div className="max-w-6xl mx-auto px-6 py-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
         <span className="text-xs text-secondary-text">
-          {footerData.copyright}
+          {footerData?.copyright || DEFAULT_FOOTER.copyright}
         </span>
 
         <div className="flex gap-6 text-xs text-secondary-text">
-          {footerData.bottomLinks.map((link) => (
+          {bottomLinksList.map((link, idx) => (
             <a 
-              key={link.label} 
-              href={link.href} 
-              onClick={(e) => handleLinkClick(e, link.href)}
+              key={link.label + idx} 
+              href={link.href || "#"} 
+              onClick={(e) => handleLinkClick(e, link.href || "#")}
               className="hover:text-foreground transition-colors"
             >
               {link.label}

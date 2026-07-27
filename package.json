@@ -9,7 +9,8 @@
 		"dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
 		"build": "tsc -b && vite build",
 		"lint": "oxlint",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"deploy": "npm run build && node scripts/deploy.js"
 	},
 	"dependencies": {
 		"@dotlottie/react-player": "^1.6.19",
@@ -40,7 +41,9 @@
 		"@types/react-dom": "^19.2.3",
 		"@types/three": "^0.185.0",
 		"@vitejs/plugin-react": "^6.0.3",
+		"basic-ftp": "^6.0.2",
 		"concurrently": "^10.0.3",
+		"dotenv": "^17.4.2",
 		"jsrepo": "^3.8.1",
 		"oxlint": "^1.71.0",
 		"tailwindcss": "^4.3.2",

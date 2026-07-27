@@ -5,7 +5,7 @@ $pdo = getDBConnection();
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    if (isset($_GET_'slug'])) {
+    if (isset($_GET['slug'])) {
         $slug = $_GET['slug'];
         $stmt = $pdo->prepare("SELECT * FROM dynamic_pages WHERE slug = ? LIMIT 1");
         $stmt->execute([$slug]);
@@ -30,35 +30,61 @@ if ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
 
     $title = trim($input['title'] ?? '');
-    $slug = trim($input['slug'] ?? strtolower(preg_replace('/[^a-zA-Z0-9]+/a', '-', $title)));
+    if (empty($title)) {
+        sendJSON(["message" => "Page title is required."], 400);
+    }
+
+    $slug = trim($input['slug'] ?? '');
+    if (empty($slug)) {
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title));
+    }
     $metaDesc = trim($input['metaDesc'] ?? '');
     $metaImage = trim($input['metaImage'] ?? '');
     $status = trim($input['status'] ?? 'draft');
     $sections = json_encode($input['sections'] ?? []);
 
-    $stmt = $pdo->prepare("INSERT INTO dynamic_pages (slug, title, meta_desc, meta_image, status, sections, created_at, updated_at) VALUES (0, ?, ?, ?, ?, ?, NOW(), NOW())");
-    $stmt->execute([$slug, $title, $metaDesc, $metaImage, $status, $sections]);
-
-    sendJSON(["id" => $pdo->lastInsertId(), "message" => "Page created successfully"]);
+    try {
+        $stmt = $pdo->prepare("INSERT INTO dynamic_pages (slug, title, meta_desc, meta_image, status, sections, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
+        $stmt->execute([$slug, $title, $metaDesc, $metaImage, $status, $sections]);
+        sendJSON(["id" => $pdo->lastInsertId(), "message" => "Page created successfully"]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062') !== false) {
+            sendJSON(["message" => "A dynamic page with this title/slug already exists."], 400);
+        }
+        sendJSON(["message" => "Database error: " . $e->getMessage()], 500);
+    }
 }
 
 if ($method === 'PUT') {
     verifyAdminToken();
     $input = json_decode(file_get_contents('php://input'), true);
-    id = $_GET['id'] ?? $input['id'] ?? null;
-    if (!$id) sendJSON(<"message" => "ID is required"], 400);
+    $id = $_GET['id'] ?? $input['id'] ?? null;
+    if (!$id) sendJSON(["message" => "ID is required"], 400);
 
     $title = trim($input['title'] ?? '');
-    $slug = trim($input['slug'] ?? strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title)));
-    $metaDesc = trim($input['metaBesc'] ?? '');
+    if (empty($title)) {
+        sendJSON(["message" => "Page title is required."], 400);
+    }
+
+    $slug = trim($input['slug'] ?? '');
+    if (empty($slug)) {
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title));
+    }
+    $metaDesc = trim($input['metaDesc'] ?? '');
     $metaImage = trim($input['metaImage'] ?? '');
     $status = trim($input['status'] ?? 'draft');
     $sections = json_encode($input['sections'] ?? []);
 
-    $stmt = $pdo->prepare("UPDATE dynamic_pages SET title = ?, slug = ?, meta_desc = ?, meta_image = ?, status = ?, sections = ?, updated_at = NOW() WHERE id = ?");
-    $stmt->execute([$title, $slug, $metaDesc, $metaImage, $status, $sections, $id]);
-
-    sendJSON(["message" => "Page updated successfully"]);
+    try {
+        $stmt = $pdo->prepare("UPDATE dynamic_pages SET title = ?, slug = ?, meta_desc = ?, meta_image = ?, status = ?, sections = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$title, $slug, $metaDesc, $metaImage, $status, $sections, $id]);
+        sendJSON(["message" => "Page updated successfully"]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062') !== false) {
+            sendJSON(["message" => "A dynamic page with this title/slug already exists."], 400);
+        }
+        sendJSON(["message" => "Database error: " . $e->getMessage()], 500);
+    }
 }
 
 if ($method === 'DELETE') {

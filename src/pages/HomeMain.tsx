@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, animate } from "motion/react";
 import type { AnimationPlaybackControls } from "motion/react";
 import { getApiUrl } from "../lib/api";
+import { updatePageSEO } from "../lib/seo";
 import type { IconType } from "react-icons";
 import { useIntroAnimation } from "../context/IntroContext";
 import { useTheme } from "../context/ThemeContext";
@@ -379,11 +380,22 @@ const TESTIMONIALS = [
   { name: "Marcus Brody", role: "Operations Lead, Prysma Ltd", review: "Custom automation scripts reduced document search loops down to seconds." },
 ];
 
-export default function HomeMain() {
-  const [siteData, setSiteData] = useState<any>(null);
+interface HomeMainProps {
+  siteData?: any;
+}
+
+export default function HomeMain({ siteData: initialSiteData }: HomeMainProps) {
+  const [siteData, setSiteData] = useState<any>(initialSiteData || null);
   useGlobalScramble();
 
   useEffect(() => {
+    if (initialSiteData) {
+      setSiteData(initialSiteData);
+    }
+  }, [initialSiteData]);
+
+  useEffect(() => {
+    if (initialSiteData) return;
     const loadContent = async () => {
       try {
         const res = await fetch(getApiUrl("/content"));
@@ -391,13 +403,21 @@ export default function HomeMain() {
         const data = await res.json();
         setSiteData(data);
       } catch (err) {
-        console.warn("Express backend API offline or content empty. Using static content fallbacks.");
+        console.warn("API offline or content empty. Using static content fallbacks.");
       }
     };
     loadContent();
-  }, []);
+  }, [initialSiteData]);
 
   useEffect(() => {
+    if (siteData?.seo) {
+      updatePageSEO(siteData.seo);
+    } else if (siteData?.hero?.title) {
+      updatePageSEO({
+        title: siteData.hero.title,
+        description: siteData.hero.desc
+      });
+    }
     if (siteData?.theme?.primaryColor) {
       const hsl = hexToHsl(siteData.theme.primaryColor);
       if (hsl) {
@@ -452,15 +472,15 @@ export default function HomeMain() {
     }
   };
 
-  const hero = siteData?.hero || {
+  const hero = (siteData?.hero && siteData.hero.title) ? siteData.hero : {
     badge: "AI-first software development",
-    title: "AI-first software that builds businesses",
+    title: "Nitwebs",
     desc: "We engineer AI products, scalable software, SaaS platforms, mobile apps, and automation systems for ambitious companies worldwide."
   };
 
-  const processList = siteData?.process || PROCESS_STEPS;
-  const whyUsList = siteData?.whyUs || WHY_US_POINTS;
-  const showcaseList = siteData?.showcase || [
+  const processList = (Array.isArray(siteData?.process) && siteData.process.length > 0) ? siteData.process : PROCESS_STEPS;
+  const whyUsList = (Array.isArray(siteData?.whyUs) && siteData.whyUs.length > 0) ? siteData.whyUs : WHY_US_POINTS;
+  const showcaseList = (Array.isArray(siteData?.showcase) && siteData.showcase.length > 0) ? siteData.showcase : [
     {
       tags: ["SaaS", "Next.js", "Claude API"],
       title: "Zenith Analytics",
@@ -476,8 +496,8 @@ export default function HomeMain() {
       image: "/mobile.png",
     }
   ];
-  const testimonialsList = siteData?.testimonials || TESTIMONIALS;
-  const brandsList = siteData?.brands || [
+  const testimonialsList = (Array.isArray(siteData?.testimonials) && siteData.testimonials.length > 0) ? siteData.testimonials : TESTIMONIALS;
+  const brandsList = (Array.isArray(siteData?.brands) && siteData.brands.length > 0) ? siteData.brands : [
     { name: "Anthropic", icon: "SiAnthropic" },
     { name: "ElevenLabs", icon: "SiElevenlabs" },
     { name: "Vercel", icon: "SiVercel" },
@@ -853,7 +873,7 @@ export default function HomeMain() {
       </section>
 
       {/* About Us Section */}
-      <AboutUsSection glitchColors={siteData?.theme?.glitchColors} />
+      <AboutUsSection glitchColors={siteData?.theme?.glitchColors} aboutData={siteData?.aboutUs || siteData?.about} />
 
       {/* Process Section */}
       <section id="process" className="relative py-24 px-6 bg-transparent">

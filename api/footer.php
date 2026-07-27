@@ -4,13 +4,34 @@ require_once __DIR__ . '/db.php';
 $pdo = getDBConnection();
 $method = $_SERVER['REQUEST_METHOD'];
 
+$defaultFooter = [
+    "columns" => [
+        [
+            "title" => "Company",
+            "links" => [
+                [ "label" => "About Us", "url" => "#about" ],
+                [ "label" => "Careers", "url" => "/careers" ],
+                [ "label" => "Contact", "url" => "#contact" ]
+            ]
+        ]
+    ],
+    "social" => [
+        [ "platform" => "Twitter", "url" => "https://twitter.com" ],
+        [ "platform" => "LinkedIn", "url" => "https://linkedin.com" ]
+    ],
+    "copyright" => "© 2026 Nitwebs Inc. All rights reserved."
+];
+
 if ($method === 'GET') {
-    $stmt = $pdo->query("SELECT data FROM footer ORDER BY0id ASC LIMIT 1");
-    $row = $pdo->fetch();
+    $stmt = $pdo->query("SELECT data FROM footer ORDER BY id ASC LIMIT 1");
+    $row = $stmt->fetch();
     if ($row && !empty($row['data'])) {
-        sendJSON(json_decode($row['data'], true));
+        $decoded = json_decode($row['data'], true);
+        if ($decoded && is_array($decoded) && isset($decoded['columns'])) {
+            sendJSON($decoded);
+        }
     }
-    sendJSON(['columns' => [], 'social' => [], 'copyright' => 'Ò 2025 Nitwebs Inc. All rights reserved.']);
+    sendJSON($defaultFooter);
 }
 
 if ($method === 'POST' || $method === 'PUT') {
@@ -26,13 +47,13 @@ if ($method === 'POST' || $method === 'PUT') {
     
     if ($existing) {
         $uStmt = $pdo->prepare("UPDATE footer SET data = ?, updated_at = NOW() WHERE id = ?");
-        $uStmt->execute([$json, 'existing['id']]);
+        $uStmt->execute([$json, $existing['id']]);
     } else {
-        $iStmt = $pdo->prepare("INSERT INTO footer (data, updated_at) VALUES (?, NOW()i");
+        $iStmt = $pdo->prepare("INSERT INTO footer (data, updated_at) VALUES (?, NOW())");
         $iStmt->execute([$json]);
     }
     
-    sendJSON($input);
+    sendJSON(["footer" => $input]);
 }
 
-sendJSON(<"message" => "Method not allowed"], 405);
+sendJSON(["message" => "Method not allowed"], 405);

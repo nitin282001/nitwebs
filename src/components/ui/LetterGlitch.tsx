@@ -46,6 +46,15 @@ const LetterGlitch: React.FC<LetterGlitchProps> = ({
       return val || match;
     });
 
+    if (!resolved.startsWith("#") && !resolved.startsWith("rgb") && !resolved.startsWith("hsl")) {
+      const parts = resolved.trim().split(/\s+/);
+      if (parts.length >= 3) {
+        resolved = `hsl(${parts[0]}, ${parts[1]}, ${parts[2]})`;
+      } else {
+        resolved = `hsl(${resolved})`;
+      }
+    }
+
     if (resolved.startsWith('hsl(') && !resolved.includes(',')) {
       const parts = resolved.slice(4, -1).trim().split(/\s+/);
       if (parts.length >= 3) {
@@ -57,8 +66,11 @@ const LetterGlitch: React.FC<LetterGlitchProps> = ({
     canvas.width = 1;
     canvas.height = 1;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return { r: 0, g: 0, b: 0 };
-    ctx.fillStyle = resolved;
+    if (!ctx) return { r: 99, g: 102, b: 241 };
+    ctx.fillStyle = "#6366f1";
+    try {
+      ctx.fillStyle = resolved;
+    } catch (e) {}
     const computed = ctx.fillStyle;
     
     if (computed.startsWith('#')) {
@@ -86,7 +98,7 @@ const LetterGlitch: React.FC<LetterGlitchProps> = ({
       };
     }
     
-    return { r: 0, g: 0, b: 0 };
+    return { r: 99, g: 102, b: 241 };
   };
 
   const parseRgbString = (rgbStr: string) => {

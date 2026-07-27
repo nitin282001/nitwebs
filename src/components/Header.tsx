@@ -91,8 +91,8 @@ export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: 
         // Social Links admin panel → SiteContent.socialLinks is the single source of truth
         if (data?.socialLinks && data.socialLinks.length > 0) {
           setSocials(data.socialLinks.map((s: any) => ({
-            label: s.platform,
-            link: s.href
+            label: s.platform || "Social",
+            link: s.href || s.url || "#"
           })));
         }
       })
@@ -212,8 +212,8 @@ export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: 
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center justify-end gap-7 flex-1 mr-6">
-          {links.map((link) => {
-            const hasChildren = link.children && link.children.length > 0;
+          {(links || []).map((link) => {
+            const hasChildren = Array.isArray(link.children) && link.children.length > 0;
             return (
               <div key={link.label} className="relative group py-2">
                 {hasChildren ? (
@@ -224,7 +224,7 @@ export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: 
                     </button>
                     
                     <div className="absolute top-full left-0 mt-2 min-w-[240px] bg-background border border-border rounded-xl shadow-lg p-2 hidden group-hover:flex flex-col gap-1 z-50">
-                      {link.children.map((child) => {
+                      {(link.children || []).map((child) => {
                         if (child.type === "page") {
                           return (
                             <Link 

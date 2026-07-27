@@ -9,12 +9,23 @@ import NotFound from "./NotFound";
 import { Reveal } from "../lib/animations";
 import { Briefcase, MapPin, Calendar, ArrowLeft, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
 import SpecularButton from "../components/ui/SpecularButton";
+import { updatePageSEO } from "../lib/seo";
 
 export default function JobDetail() {
   const { slug } = useParams();
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (job?.title) {
+      updatePageSEO({
+        title: `${job.title} - Careers`,
+        description: job.summary || `Apply for ${job.title} position at Nitwebs.`,
+        canonicalUrl: window.location.href
+      });
+    }
+  }, [job]);
 
   // Form states
   const [name, setName] = useState("");
@@ -50,10 +61,12 @@ export default function JobDetail() {
           } else {
             setNotFound(true);
           }
-        } else {
+        } else if (data && data.title) {
           setJob(data);
           document.title = `${data.title} — Careers — Nitwebs`;
           if (data.status === "closed") setIsClosed(true);
+        } else {
+          setNotFound(true);
         }
       } catch (err) {
         console.error(err);

@@ -5,7 +5,7 @@ $pdo = getDBConnection();
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    if (isset($_GET_'id']) || isset($_GET['slug'])) {
+    if (isset($_GET['id']) || isset($_GET['slug'])) {
         $val = $_GET['id'] ?? $_GET['slug'];
         $stmt = $pdo->prepare("SELECT * FROM jobs WHERE id = ? OR slug = ? LIMIT 1");
         $stmt->execute([$val, $val]);
@@ -30,30 +30,50 @@ if ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     
     $title = trim($input['title'] ?? '');
-    $slug = trim($input['slug'] ?? strtolower(preg_replace('/[^a-zA-Z0-9]+/a', '-', $title)));
+    if (empty($title)) {
+        sendJSON(["message" => "Job title is required."], 400);
+    }
+
+    $slug = trim($input['slug'] ?? '');
+    if (empty($slug)) {
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title));
+    }
     $department = trim($input['department'] ?? '');
     $location = trim($input['location'] ?? 'Remote');
     $employmentType = trim($input['employmentType'] ?? 'full-time');
     $summary = trim($input['summary'] ?? '');
     $description = trim($input['description'] ?? '');
-    $requirements = json_encode($input['needs'] ?? $input['requirements'] ?? []);
+    $requirements = json_encode($input['requirements'] ?? []);
     $status = trim($input['status'] ?? 'open');
     
-    $stmt = $pdo->prepare("INSERT INTO jobs (title, slug, department, location, employment_type, summary, description, requirements, status, posted_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-    $stmt->execute([$title, $slug, $department, $location, $employmentType, $summary, $description, $requirements, $status]);
-    
-    $id = $pdo->lastInsertId();
-    sendJSON(["id" => $id, "message" => "Job created successfully"]);
+    try {
+        $stmt = $pdo->prepare("INSERT INTO jobs (title, slug, department, location, employment_type, summary, description, requirements, status, posted_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([$title, $slug, $department, $location, $employmentType, $summary, $description, $requirements, $status]);
+        $id = $pdo->lastInsertId();
+        sendJSON(["id" => $id, "message" => "Job created successfully"]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062') !== false) {
+            sendJSON(["message" => "A job listing with this title/slug already exists."], 400);
+        }
+        sendJSON(["message" => "Database error: " . $e->getMessage()], 500);
+    }
 }
 
 if ($method === 'PUT') {
     verifyAdminToken();
     $input = json_decode(file_get_contents('php://input'), true);
-    $id = $_GET_'id'] ?? $input['id'] ?? null;
+    $id = $_GET['id'] ?? $input['id'] ?? null;
     if (!$id) sendJSON(["message" => "Job ID is required"], 400);
 
     $title = trim($input['title'] ?? '');
-    $slug = trim($input['slug'] ?? strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title)));
+    if (empty($title)) {
+        sendJSON(["message" => "Job title is required."], 400);
+    }
+
+    $slug = trim($input['slug'] ?? '');
+    if (empty($slug)) {
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title));
+    }
     $department = trim($input['department'] ?? '');
     $location = trim($input['location'] ?? 'Remote');
     $employmentType = trim($input['employmentType'] ?? 'full-time');
@@ -62,10 +82,16 @@ if ($method === 'PUT') {
     $requirements = json_encode($input['requirements'] ?? []);
     $status = trim($input['status'] ?? 'open');
 
-    $stmt = $pdo->prepare("UPDATE jobs SET title = ?, slug = ?, department = ?, location = ?, employment_type = ?, summary = ?, description = ?, requirements = ?, status = ? WHERE id = ?");
-    $stmt->execute([$title, $slug, $department, $location, $employmentType, $summary, $description, $requirements, $status, $id]);
-    
-    sendJSON(["message" => "Job updated successfully"]);
+    try {
+        $stmt = $pdo->prepare("UPDATE jobs SET title = ?, slug = ?, department = ?, location = ?, employment_type = ?, summary = ?, description = ?, requirements = ?, status = ? WHERE id = ?");
+        $stmt->execute([$title, $slug, $department, $location, $employmentType, $summary, $description, $requirements, $status, $id]);
+        sendJSON(["message" => "Job updated successfully"]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062') !== false) {
+            sendJSON(["message" => "A job listing with this title/slug already exists."], 400);
+        }
+        sendJSON(["message" => "Database error: " . $e->getMessage()], 500);
+    }
 }
 
 if ($method === 'DELETE') {

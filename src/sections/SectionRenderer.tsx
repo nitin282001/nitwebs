@@ -15,7 +15,7 @@ interface SectionRendererProps {
 export default function SectionRenderer({ sections = [] }: SectionRendererProps) {
   return (
     <>
-      {sections.map((section, idx) => {
+      {(sections || []).map((section, idx) => {
         const key = section._id || `section-${idx}`;
         switch (section.type) {
           case "hero":

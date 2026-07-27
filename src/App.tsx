@@ -54,7 +54,7 @@ export default function App() {
         </div>
         <Suspense fallback={null}>
           <Routes>
-            <Route path="/" element={<HomeMain />} />
+            <Route path="/" element={<HomeMain siteData={siteData} />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/careers" element={<Careers />} />
             <Route path="/careers/:slug" element={<JobDetail />} />

@@ -6,15 +6,28 @@ import SpecularButton from "../components/ui/SpecularButton";
 
 interface AboutUsSectionProps {
   glitchColors?: string[];
+  aboutData?: {
+    badge?: string;
+    title?: string;
+    paragraph1?: string;
+    paragraph2?: string;
+    ctaText?: string;
+  };
 }
 
-export default function AboutUsSection({ glitchColors }: AboutUsSectionProps) {
+export default function AboutUsSection({ glitchColors, aboutData }: AboutUsSectionProps) {
   const handleScrollToContact = () => {
     const contactEl = document.getElementById("contact");
     if (contactEl) {
       contactEl.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+  const badge = aboutData?.badge || "About Us";
+  const title = aboutData?.title || "We Engineer the Future of Software";
+  const paragraph1 = aboutData?.paragraph1 || "At Nitwebs, we combine world-class engineering, artificial intelligence, and strategic design to construct premium digital products. Our team builds secure, scalable platforms that resolve complex operational challenges for high-growth enterprises globally.";
+  const paragraph2 = aboutData?.paragraph2 || "From custom SaaS architectures and automated system integrations to cutting-edge AI models, we embed quality-first engineering into every line of code. We partner with ambitious organizations to deliver measurable, transformative outcomes.";
+  const ctaText = aboutData?.ctaText || "Learn More";
 
   return (
     <section id="about" className="relative py-24 px-6 overflow-hidden bg-transparent">
@@ -35,18 +48,14 @@ export default function AboutUsSection({ glitchColors }: AboutUsSectionProps) {
             variants={fadeUp}
           >
             <span className="text-xs font-mono text-primary tracking-widest uppercase block mb-3">
-              About Us
+              {badge}
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-normal font-headline text-foreground mb-6 leading-[1.15]">
-              We Engineer the Future of Software
+              {title}
             </h2>
             <div className="space-y-4 text-secondary-text text-sm sm:text-base leading-relaxed mb-8 font-sans">
-              <p>
-                At Nitwebs, we combine world-class engineering, artificial intelligence, and strategic design to construct premium digital products. Our team builds secure, scalable platforms that resolve complex operational challenges for high-growth enterprises globally.
-              </p>
-              <p>
-                From custom SaaS architectures and automated system integrations to cutting-edge AI models, we embed quality-first engineering into every line of code. We partner with ambitious organizations to deliver measurable, transformative outcomes.
-              </p>
+              {paragraph1 && <p>{paragraph1}</p>}
+              {paragraph2 && <p>{paragraph2}</p>}
             </div>
             <SpecularButton
               onClick={handleScrollToContact}
@@ -59,7 +68,7 @@ export default function AboutUsSection({ glitchColors }: AboutUsSectionProps) {
               baseColor="hsl(var(--border))"
               className="px-6 py-2.5 text-sm font-semibold w-fit self-start cursor-pointer"
             >
-              Learn More
+              {ctaText}
             </SpecularButton>
           </motion.div>
 

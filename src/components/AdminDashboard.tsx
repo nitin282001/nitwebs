@@ -31,7 +31,13 @@ import {
   GripVertical,
   X,
   Share2,
-  Camera
+  Camera,
+  KeyRound,
+  RefreshCw,
+  Send,
+  Search,
+  Sparkles,
+  Code
 } from "lucide-react";
 
 import { hexToHsl } from "../lib/utils";
@@ -111,6 +117,32 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [activeTab, setActiveTab] = useState("hero");
+
+  // OTP 2FA State
+  const [loginStep, setLoginStep] = useState<"credentials" | "otp">("credentials");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [devOtp, setDevOtp] = useState("");
+  const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [resendingOtp, setResendingOtp] = useState(false);
+  const [otpSuccessMsg, setOtpSuccessMsg] = useState("");
+
+  // Admin Profile & Security State
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileUsername, setProfileUsername] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileCurrentPassword, setProfileCurrentPassword] = useState("");
+  const [profileNewPassword, setProfileNewPassword] = useState("");
+  const [profileConfirmPassword, setProfileConfirmPassword] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // SMTP Test State
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [smtpTestMsg, setSmtpTestMsg] = useState("");
+  const [smtpTestError, setSmtpTestError] = useState("");
+  const [testRecipientEmail, setTestRecipientEmail] = useState("");
 
   // Content state
   const [content, setContent] = useState<any>(null);
@@ -217,6 +249,7 @@ export default function AdminDashboard() {
       fetchAdminJobs();
       fetchAdminApps();
       fetchGalleryPhotos();
+      fetchProfileInfo();
     } else {
       setLoading(false);
     }
@@ -232,11 +265,37 @@ export default function AdminDashboard() {
     }
   }, [content?.theme?.primaryColor]);
 
+  const fetchProfileInfo = async () => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) return;
+    setProfileLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth?action=profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setProfileUsername(data.username || "admin");
+        setProfileEmail(data.email || "admin@nitwebs.com");
+        setProfileError("");
+      } else {
+        if (res.status === 401 || res.status === 403) {
+          setProfileError(data.message || "Session expired or invalid token. Please log out and sign in again.");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
+    setOtpSuccessMsg("");
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
@@ -245,14 +304,155 @@ export default function AdminDashboard() {
       if (!res.ok) {
         throw new Error(data.message || "Login failed");
       }
+      if (data.requireOtp) {
+        setOtpEmail(data.email || "");
+        setDevOtp(data.devOtp || "");
+        setLoginStep("otp");
+      } else if (data.token) {
+        localStorage.setItem("adminToken", data.token);
+        setIsLoggedIn(true);
+        fetchContent();
+        fetchSubmissions();
+        fetchNav();
+        fetchFooter();
+        fetchProfileInfo();
+      }
+    } catch (err: any) {
+      setLoginError(err.message || "Invalid credentials.");
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setOtpSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify-otp", username, otp: otpCode })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "OTP verification failed");
+      }
       localStorage.setItem("adminToken", data.token);
       setIsLoggedIn(true);
       fetchContent();
       fetchSubmissions();
       fetchNav();
       fetchFooter();
+      fetchPages();
+      fetchAdminJobs();
+      fetchAdminApps();
+      fetchGalleryPhotos();
+      fetchProfileInfo();
     } catch (err: any) {
-      setLoginError(err.message || "Invalid credentials.");
+      setLoginError(err.message || "Invalid OTP code.");
+    } finally {
+      setOtpSubmitting(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoginError("");
+    setOtpSuccessMsg("");
+    setResendingOtp(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resend-otp", username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to resend OTP");
+      }
+      if (data.devOtp) setDevOtp(data.devOtp);
+      setOtpSuccessMsg(data.message || "New OTP code sent to your email.");
+    } catch (err: any) {
+      setLoginError(err.message || "Failed to resend OTP.");
+    } finally {
+      setResendingOtp(false);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError("");
+    setProfileSuccess("");
+
+    if (profileNewPassword && profileNewPassword !== profileConfirmPassword) {
+      setProfileError("New passwords do not match.");
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_BASE}/auth?action=update-profile`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          username: profileUsername,
+          email: profileEmail,
+          currentPassword: profileCurrentPassword,
+          newPassword: profileNewPassword
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update profile");
+      }
+      if (data.token) {
+        localStorage.setItem("adminToken", data.token);
+      }
+      setProfileSuccess(data.message || "Admin profile & security credentials updated successfully.");
+      setProfileCurrentPassword("");
+      setProfileNewPassword("");
+      setProfileConfirmPassword("");
+    } catch (err: any) {
+      setProfileError(err.message || "An error occurred while updating profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleTestSmtp = async () => {
+    setSmtpTestMsg("");
+    setSmtpTestError("");
+    const recipient = testRecipientEmail || profileEmail || "admin@nitwebs.com";
+    if (!recipient) {
+      setSmtpTestError("Please specify a recipient email address for testing.");
+      return;
+    }
+    setTestingSmtp(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_BASE}/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: "test-smtp",
+          testEmail: recipient,
+          smtp: content?.smtp
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "SMTP test connection failed");
+      }
+      setSmtpTestMsg(data.message || `Test email sent successfully to ${recipient}!`);
+    } catch (err: any) {
+      setSmtpTestError(err.message || "Failed to send SMTP test email.");
+    } finally {
+      setTestingSmtp(false);
     }
   };
 
@@ -659,7 +859,7 @@ export default function AdminDashboard() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-background flex flex-col justify-center items-center px-6 relative">
+      <div className="min-h-screen bg-background flex flex-col justify-center items-center px-6 relative font-sans">
         {/* Simple Blueprint Dotted Background */}
         <div className="absolute inset-0 z-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
 
@@ -667,51 +867,135 @@ export default function AdminDashboard() {
           <div className="flex justify-between items-center mb-8">
             <div>
               <span className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-1">Super Admin Panel</span>
-              <h1 className="text-2xl font-normal font-headline text-foreground">Authenticate</h1>
+              <h1 className="text-2xl font-normal font-headline text-foreground">
+                {loginStep === "credentials" ? "Authenticate" : "Enter Security OTP"}
+              </h1>
             </div>
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
               <Lock className="w-5 h-5" />
             </div>
           </div>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
-            {loginError && (
-              <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-4 text-xs font-medium">
-                {loginError}
+          {loginStep === "credentials" ? (
+            <form onSubmit={handleLogin} className="flex flex-col gap-5">
+              {loginError && (
+                <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-4 text-xs font-medium">
+                  {loginError}
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Username</label>
+                <input 
+                  type="text" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter admin username"
+                  className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none transition-all"
+                  required
+                />
               </div>
-            )}
 
-            <div>
-              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Username</label>
-              <input 
-                type="text" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter admin username"
-                className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none transition-all"
-                required
-              />
-            </div>
+              <div>
+                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Password</label>
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none transition-all"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Password</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none transition-all"
-                required
-              />
-            </div>
+              <button 
+                type="submit"
+                className="w-full py-4 text-sm font-semibold bg-primary text-white rounded-full transition-all duration-200 hover:opacity-90 shadow-md hover:shadow-lg mt-2 cursor-pointer"
+              >
+                Sign In with Email OTP
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-5">
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-xs text-neutral-700 leading-relaxed">
+                <span className="font-bold text-neutral-900 block mb-1">Email 2FA Verification</span>
+                We sent a 6-digit verification code to <span className="font-semibold text-primary">{otpEmail || "admin email"}</span>. Please enter it below.
+              </div>
 
-            <button 
-              type="submit"
-              className="w-full py-4 text-sm font-semibold bg-primary text-white rounded-full transition-all duration-200 hover:opacity-90 shadow-md hover:shadow-lg mt-2 cursor-pointer"
-            >
-              Sign In
-            </button>
-          </form>
+              {devOtp && (
+                <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-xl p-3.5 text-xs font-mono">
+                  <span className="font-bold block text-[10px] text-amber-600 uppercase tracking-wider mb-0.5">Local Dev Helper</span>
+                  Generated OTP Code: <strong className="text-amber-900 text-sm tracking-widest ml-1">{devOtp}</strong>
+                </div>
+              )}
+
+              {loginError && (
+                <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-4 text-xs font-medium">
+                  {loginError}
+                </div>
+              )}
+
+              {otpSuccessMsg && (
+                <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl p-3.5 text-xs font-medium flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  {otpSuccessMsg}
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">6-Digit OTP Code</label>
+                <input 
+                  type="text" 
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="123456"
+                  className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-center text-xl font-bold font-mono text-neutral-900 tracking-[0.4em] outline-none transition-all"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <button 
+                type="submit"
+                disabled={otpSubmitting || otpCode.length < 6}
+                className="w-full py-4 text-sm font-semibold bg-primary text-white rounded-full transition-all duration-200 hover:opacity-90 shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {otpSubmitting ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Verifying Code...
+                  </>
+                ) : (
+                  "Verify & Complete Login"
+                )}
+              </button>
+
+              <div className="flex items-center justify-between pt-2 border-t border-border text-xs">
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={resendingOtp}
+                  className="text-primary font-semibold hover:underline cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${resendingOtp ? 'animate-spin' : ''}`} />
+                  Resend OTP Code
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginStep("credentials");
+                    setOtpCode("");
+                    setLoginError("");
+                  }}
+                  className="text-neutral-500 hover:text-neutral-900 transition-colors"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </form>
+          )}
 
           <a href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-500 hover:text-primary transition-colors mt-6">
             <ArrowLeft className="w-3.5 h-3.5" /> Return to Website
@@ -897,6 +1181,32 @@ export default function AdminDashboard() {
                 </span>
               )}
             </button>
+
+            <div className="border-t border-border/80 my-2" />
+            <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest px-3 py-2">Security & Settings</span>
+            <button
+              onClick={() => setActiveTab("security")}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all text-left cursor-pointer w-full ${
+                activeTab === "security" 
+                  ? "bg-primary/10 text-primary" 
+                  : "text-neutral-600 hover:bg-neutral-50"
+              }`}
+            >
+              <KeyRound className="w-4 h-4" />
+              Admin Credentials & Mail
+            </button>
+
+            <button
+              onClick={() => setActiveTab("seo")}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all text-left cursor-pointer w-full ${
+                activeTab === "seo" 
+                  ? "bg-primary/10 text-primary" 
+                  : "text-neutral-600 hover:bg-neutral-50"
+              }`}
+            >
+              <Search className="w-4 h-4" />
+              SEO & Search Indexing
+            </button>
           </div>
           
           <a href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-500 hover:text-primary transition-colors px-3 py-1">
@@ -1057,6 +1367,70 @@ export default function AdminDashboard() {
                       className="bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none w-32 font-mono"
                       placeholder="#6366f1"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Favicon Upload Section */}
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6 mt-6">
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-800 font-headline mb-1">Website Favicon</h3>
+                  <p className="text-xs text-secondary-text mb-4">Upload a custom favicon image (.png, .ico, .svg, .webp) displayed in web browser tabs.</p>
+
+                  <div className="flex flex-col gap-4">
+                    <input 
+                      type="file" 
+                      accept="image/png, image/x-icon, image/vnd.microsoft.icon, image/svg+xml, image/jpeg, image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const faviconUrl = reader.result as string;
+                            setContent({ ...content, logo: { ...content.logo, faviconUrl } });
+                            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+                            if (!link) {
+                              link = document.createElement("link");
+                              link.rel = "icon";
+                              document.getElementsByTagName("head")[0].appendChild(link);
+                            }
+                            link.href = faviconUrl;
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full text-sm text-neutral-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-tint file:text-primary hover:file:opacity-90 cursor-pointer"
+                    />
+
+                    {content.logo?.faviconUrl && (
+                      <div className="border border-border rounded-xl p-4 bg-neutral-50 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-white border border-neutral-200 p-2 flex items-center justify-center shadow-sm shrink-0">
+                            <img 
+                              src={content.logo.faviconUrl} 
+                              alt="Favicon Preview" 
+                              className="w-6 h-6 object-contain"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-neutral-900 block">Favicon Active</span>
+                            <span className="text-[10px] text-neutral-500 font-mono">Displayed in browser tab</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setContent({ ...content, logo: { ...content.logo, faviconUrl: "" } });
+                            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+                            if (link) link.href = "/favicon.svg";
+                          }}
+                          className="text-xs font-semibold text-red-500 hover:underline cursor-pointer shrink-0"
+                        >
+                          Remove Favicon
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1338,6 +1712,73 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* About Us Tab */}
+          {activeTab === "about" && (
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-bold font-headline text-neutral-900">About Us Section</h2>
+                <p className="text-xs text-neutral-600 mt-1">Configure company summary, mission, and headlines displayed in the landing page About section.</p>
+              </div>
+
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6">
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Category Badge</label>
+                  <input 
+                    type="text" 
+                    value={content?.aboutUs?.badge || content?.about?.badge || "About Us"}
+                    onChange={(e) => setContent({ ...content, aboutUs: { ...content?.aboutUs, badge: e.target.value } })}
+                    placeholder="About Us"
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Main Section Heading</label>
+                  <input 
+                    type="text" 
+                    value={content?.aboutUs?.title || content?.about?.title || "We Engineer the Future of Software"}
+                    onChange={(e) => setContent({ ...content, aboutUs: { ...content?.aboutUs, title: e.target.value } })}
+                    placeholder="We Engineer the Future of Software"
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-headline text-base"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">First Paragraph</label>
+                  <textarea 
+                    rows={4}
+                    value={content?.aboutUs?.paragraph1 || content?.about?.paragraph1 || "At Nitwebs, we combine world-class engineering, artificial intelligence, and strategic design to construct premium digital products. Our team builds secure, scalable platforms that resolve complex operational challenges for high-growth enterprises globally."}
+                    onChange={(e) => setContent({ ...content, aboutUs: { ...content?.aboutUs, paragraph1: e.target.value } })}
+                    placeholder="At Nitwebs, we combine world-class engineering..."
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Second Paragraph</label>
+                  <textarea 
+                    rows={4}
+                    value={content?.aboutUs?.paragraph2 || content?.about?.paragraph2 || "From custom SaaS architectures and automated system integrations to cutting-edge AI models, we embed quality-first engineering into every line of code. We partner with ambitious organizations to deliver measurable, transformative outcomes."}
+                    onChange={(e) => setContent({ ...content, aboutUs: { ...content?.aboutUs, paragraph2: e.target.value } })}
+                    placeholder="From custom SaaS architectures..."
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">CTA Button Label</label>
+                  <input 
+                    type="text" 
+                    value={content?.aboutUs?.ctaText || content?.about?.ctaText || "Learn More"}
+                    onChange={(e) => setContent({ ...content, aboutUs: { ...content?.aboutUs, ctaText: e.target.value } })}
+                    placeholder="Learn More"
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                  />
                 </div>
               </div>
             </div>
@@ -4427,6 +4868,7 @@ export default function AdminDashboard() {
                 setUploadingPhoto(true);
                 const token = localStorage.getItem("adminToken");
                 const formData = new FormData();
+                formData.append("photo", newPhotoFile);
                 formData.append("image", newPhotoFile);
                 formData.append("caption", newPhotoCaption);
                 formData.append("category", newPhotoCategory);
@@ -4438,7 +4880,7 @@ export default function AdminDashboard() {
                 })
                   .then(res => res.json())
                   .then(data => {
-                    if (data.photo) {
+                    if (data.photo || data.url || data.id) {
                       setNewPhotoFile(null);
                       setNewPhotoCaption("");
                       setNewPhotoCategory("office");
@@ -4528,42 +4970,551 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {galleryPhotos.map((photo) => (
-                      <div key={photo._id} className="group relative bg-neutral-50 border border-neutral-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
-                        <div className="relative aspect-[4/3] bg-neutral-900 overflow-hidden">
-                          <img
-                            src={photo.url.startsWith("http") ? photo.url : `http://localhost:5000${photo.url}`}
-                            alt={photo.caption}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                    {galleryPhotos.map((photo) => {
+                      const photoId = photo.id || photo._id;
+                      const photoSrc = photo.url.startsWith("http") ? photo.url : `${API_BASE.replace(/\/api$/, '')}${photo.url}`;
+                      return (
+                        <div key={photoId} className="group relative bg-neutral-50 border border-neutral-200 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                          <div className="relative aspect-[4/3] bg-neutral-900 overflow-hidden">
+                            <img
+                              src={photoSrc}
+                              alt={photo.caption || "Team photo"}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
 
-                        <div className="p-3 flex items-center justify-between gap-2 border-t border-neutral-200 bg-white">
-                          <p className="text-xs font-medium text-neutral-800 truncate flex-1" title={photo.caption}>
-                            {photo.caption || "No caption"}
-                          </p>
-                          <button
-                            onClick={() => {
-                              if (!confirm("Delete this photo permanently?")) return;
-                              const token = localStorage.getItem("adminToken");
-                              fetch(`${API_BASE}/gallery/${photo._id}`, {
-                                method: "DELETE",
-                                headers: { "Authorization": `Bearer ${token}` }
-                              })
-                                .then(res => res.json())
-                                .then(() => fetchGalleryPhotos())
-                                .catch(err => alert(err.message));
-                            }}
-                            className="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
-                            title="Delete photo"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="p-3 flex items-center justify-between gap-2 border-t border-neutral-200 bg-white">
+                            <p className="text-xs font-medium text-neutral-800 truncate flex-1" title={photo.caption}>
+                              {photo.caption || "No caption"}
+                            </p>
+                            <button
+                              onClick={() => {
+                                if (!confirm("Delete this photo permanently?")) return;
+                                const token = localStorage.getItem("adminToken");
+                                fetch(`${API_BASE}/gallery?id=${photoId}`, {
+                                  method: "DELETE",
+                                  headers: { "Authorization": `Bearer ${token}` }
+                                })
+                                  .then(res => res.json())
+                                  .then(() => fetchGalleryPhotos())
+                                  .catch(err => alert(err.message));
+                              }}
+                              className="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                              title="Delete photo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Security & Credentials Tab */}
+          {activeTab === "security" && (
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-bold font-headline text-neutral-900">Admin Security & OTP Configuration</h2>
+                <p className="text-xs text-neutral-600 mt-1">Manage your admin username, registered email address for receiving OTP login codes, and password.</p>
+                {profileLoading && (
+                  <div className="text-xs text-primary font-semibold animate-pulse mt-2">Loading profile settings...</div>
+                )}
+              </div>
+
+              {profileSuccess && (
+                <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl p-4 flex items-center gap-3 text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> {profileSuccess}
+                </div>
+              )}
+
+              {profileError && (
+                <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-4 text-xs font-medium">
+                  {profileError}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProfile} className="flex flex-col gap-6 border-t border-border pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Admin Username</label>
+                    <input 
+                      type="text" 
+                      value={profileUsername}
+                      onChange={(e) => setProfileUsername(e.target.value)}
+                      placeholder="admin"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">
+                      Admin Email (Receives 2FA Login OTPs)
+                    </label>
+                    <input 
+                      type="email" 
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      placeholder="admin@nitwebs.com"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                      required
+                    />
+                    <span className="text-[10px] text-neutral-500 mt-1 block">All login OTP security codes will be sent to this email address.</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/80 pt-4 flex flex-col gap-4">
+                  <h3 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Change Password (Optional)</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">New Password</label>
+                      <input 
+                        type="password" 
+                        value={profileNewPassword}
+                        onChange={(e) => setProfileNewPassword(e.target.value)}
+                        placeholder="Leave blank to keep current password"
+                        className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Confirm New Password</label>
+                      <input 
+                        type="password" 
+                        value={profileConfirmPassword}
+                        onChange={(e) => setProfileConfirmPassword(e.target.value)}
+                        placeholder="Re-enter new password"
+                        className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/80 pt-4">
+                  <div className="max-w-md">
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">
+                      Current Password <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      type="password" 
+                      value={profileCurrentPassword}
+                      onChange={(e) => setProfileCurrentPassword(e.target.value)}
+                      placeholder="Enter current password to authorize changes"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white text-xs font-semibold rounded-full hover:opacity-90 shadow-md cursor-pointer transition-all disabled:opacity-50"
+                  >
+                    {savingProfile ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Saving Credentials & SMTP...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" /> Save Security & Mail Settings
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* SMTP Mail Server Configuration Card */}
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6 mt-8">
+                <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
+                  <div>
+                    <h3 className="text-base font-bold text-neutral-900 font-headline flex items-center gap-2">
+                      <Mail className="w-5 h-5 text-primary" /> SMTP Mail Server Configuration
+                    </h3>
+                    <p className="text-xs text-neutral-500 mt-1">Configure your custom SMTP server (Gmail, Hostinger Mail, Mailtrap, Amazon SES, SendGrid) to send OTP security codes, contact inquiries, and alerts.</p>
+                  </div>
+
+                  <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={content?.smtp?.enabled === true}
+                      onChange={(e) => setContent({
+                        ...content,
+                        smtp: { ...content?.smtp, enabled: e.target.checked }
+                      })}
+                      className="w-4 h-4 accent-primary rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-neutral-800">Enable SMTP Dispatch</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">SMTP Host Address</label>
+                    <input 
+                      type="text" 
+                      value={content?.smtp?.host || ""}
+                      onChange={(e) => setContent({ ...content, smtp: { ...content?.smtp, host: e.target.value } })}
+                      placeholder="smtp.gmail.com or mail.hostinger.com"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">SMTP Port</label>
+                    <input 
+                      type="number" 
+                      value={content?.smtp?.port || 587}
+                      onChange={(e) => setContent({ ...content, smtp: { ...content?.smtp, port: parseInt(e.target.value) || 587 } })}
+                      placeholder="587"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Encryption Protocol</label>
+                    <select 
+                      value={content?.smtp?.encryption || "tls"}
+                      onChange={(e) => setContent({ ...content, smtp: { ...content?.smtp, encryption: e.target.value } })}
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none cursor-pointer"
+                    >
+                      <option value="tls">TLS / STARTTLS (Port 587 - Recommended)</option>
+                      <option value="ssl">SSL / SMTPS (Port 465)</option>
+                      <option value="none">None / Plain Text (Port 25)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">SMTP Username / Email</label>
+                    <input 
+                      type="text" 
+                      value={content?.smtp?.username || ""}
+                      onChange={(e) => setContent({ ...content, smtp: { ...content?.smtp, username: e.target.value } })}
+                      placeholder="info@nitwebs.com or user@gmail.com"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">SMTP Password / App Password</label>
+                    <input 
+                      type="password" 
+                      value={content?.smtp?.password || ""}
+                      onChange={(e) => setContent({ ...content, smtp: { ...content?.smtp, password: e.target.value } })}
+                      placeholder="••••••••••••"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">From Sender Email</label>
+                    <input 
+                      type="email" 
+                      value={content?.smtp?.from_email || ""}
+                      onChange={(e) => setContent({ ...content, smtp: { ...content?.smtp, from_email: e.target.value } })}
+                      placeholder="no-reply@nitwebs.com"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">From Sender Name</label>
+                    <input 
+                      type="text" 
+                      value={content?.smtp?.from_name || "Nitwebs Platform"}
+                      onChange={(e) => setContent({ ...content, smtp: { ...content?.smtp, from_name: e.target.value } })}
+                      placeholder="Nitwebs Platform"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Send Test Email Action Box */}
+                <div className="border-t border-border/80 pt-6 flex flex-col gap-4">
+                  <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Test SMTP Connection</h4>
+
+                  {smtpTestMsg && (
+                    <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl p-4 flex items-center gap-3 text-xs font-semibold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> {smtpTestMsg}
+                    </div>
+                  )}
+
+                  {smtpTestError && (
+                    <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-4 text-xs font-medium font-mono whitespace-pre-wrap">
+                      {smtpTestError}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <input 
+                      type="email" 
+                      value={testRecipientEmail || profileEmail}
+                      onChange={(e) => setTestRecipientEmail(e.target.value)}
+                      placeholder="Enter recipient email to test"
+                      className="flex-1 bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestSmtp}
+                      disabled={testingSmtp}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold rounded-xl cursor-pointer transition-all disabled:opacity-50 shrink-0"
+                    >
+                      {testingSmtp ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Testing Connection...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" /> Send Test Email via SMTP
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SEO & Search Engine Tab */}
+          {activeTab === "seo" && (
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-bold font-headline text-neutral-900 flex items-center gap-2">
+                  <Search className="w-5 h-5 text-primary" /> SEO & Search Engine Optimization
+                </h2>
+                <p className="text-xs text-neutral-600 mt-1">Configure global search engine metadata, OpenGraph social share previews, webmaster verification tags, and structured JSON-LD schema.</p>
+              </div>
+
+              {/* Card 1: Primary Search Metadata */}
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6">
+                <h3 className="text-sm font-bold text-neutral-800 font-headline pb-2 border-b border-border">Global Search Engine Meta Tags</h3>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Global Meta Title</label>
+                  <input 
+                    type="text" 
+                    value={content?.seo?.metaTitle || ""}
+                    onChange={(e) => setContent({ ...content, seo: { ...content?.seo, metaTitle: e.target.value } })}
+                    placeholder="Nitwebs | AI-first Software Development & SaaS Company"
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none"
+                  />
+                  <span className="text-[10px] text-neutral-400 mt-1 block">Appears as the primary title link in Google search results (Recommended: 50-60 characters).</span>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Global Meta Description</label>
+                  <textarea 
+                    rows={3}
+                    value={content?.seo?.metaDescription || ""}
+                    onChange={(e) => setContent({ ...content, seo: { ...content?.seo, metaDescription: e.target.value } })}
+                    placeholder="Nitwebs is an AI-first software development company building custom software, AI agents, mobile apps, and scalable SaaS platforms worldwide."
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-3 text-sm text-neutral-900 outline-none"
+                  />
+                  <span className="text-[10px] text-neutral-400 mt-1 block">Appears as the page snippet under the title in Google search results (Recommended: 150-160 characters).</span>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Meta Keywords (Comma Separated)</label>
+                  <input 
+                    type="text" 
+                    value={content?.seo?.metaKeywords || ""}
+                    onChange={(e) => setContent({ ...content, seo: { ...content?.seo, metaKeywords: e.target.value } })}
+                    placeholder="AI software development, SaaS engineering, custom software, AI agents, cloud infrastructure"
+                    className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Card 2: OpenGraph & Social Sharing */}
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6">
+                <h3 className="text-sm font-bold text-neutral-800 font-headline pb-2 border-b border-border">Social Media Sharing (OpenGraph & Twitter Cards)</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Canonical Site URL</label>
+                    <input 
+                      type="url" 
+                      value={content?.seo?.canonicalUrl || ""}
+                      onChange={(e) => setContent({ ...content, seo: { ...content?.seo, canonicalUrl: e.target.value } })}
+                      placeholder="https://nitwebs.com"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Robots Indexing Directive</label>
+                    <select 
+                      value={content?.seo?.robots || "index, follow"}
+                      onChange={(e) => setContent({ ...content, seo: { ...content?.seo, robots: e.target.value } })}
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none cursor-pointer"
+                    >
+                      <option value="index, follow">index, follow (Allow search engines to index and follow links)</option>
+                      <option value="noindex, follow">noindex, follow (Do not index page, but follow links)</option>
+                      <option value="noindex, nofollow">noindex, nofollow (Block search engine indexing)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Default Social Sharing Banner Image (OG Image)</label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setContent({ ...content, seo: { ...content?.seo, ogImage: reader.result } });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full text-sm text-neutral-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-tint file:text-primary hover:file:opacity-90 cursor-pointer"
+                  />
+
+                  {content?.seo?.ogImage && (
+                    <div className="mt-3 border border-border rounded-xl p-4 bg-neutral-50 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <img src={content.seo.ogImage} alt="OG Social Preview" className="h-12 w-24 object-cover rounded-lg border border-neutral-200" />
+                        <span className="text-xs font-bold text-neutral-800">Social Share Image Active</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setContent({ ...content, seo: { ...content?.seo, ogImage: "" } })}
+                        className="text-xs font-semibold text-red-500 hover:underline cursor-pointer"
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 3: Webmaster Verification & Analytics */}
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6">
+                <h3 className="text-sm font-bold text-neutral-800 font-headline pb-2 border-b border-border">Webmaster Verification & Analytics Tracking</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Google Search Console Verification Tag</label>
+                    <input 
+                      type="text" 
+                      value={content?.seo?.googleVerification || ""}
+                      onChange={(e) => setContent({ ...content, seo: { ...content?.seo, googleVerification: e.target.value } })}
+                      placeholder="e.g. google1234567890abcdef"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Bing Webmaster Verification Tag</label>
+                    <input 
+                      type="text" 
+                      value={content?.seo?.bingVerification || ""}
+                      onChange={(e) => setContent({ ...content, seo: { ...content?.seo, bingVerification: e.target.value } })}
+                      placeholder="e.g. 1234567890ABCDEF"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Google Analytics GA4 Tracking ID</label>
+                    <input 
+                      type="text" 
+                      value={content?.seo?.googleAnalyticsId || ""}
+                      onChange={(e) => setContent({ ...content, seo: { ...content?.seo, googleAnalyticsId: e.target.value } })}
+                      placeholder="G-XXXXXXXXXX"
+                      className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Structured Data JSON-LD Schema */}
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6">
+                <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
+                  <h3 className="text-sm font-bold text-neutral-800 font-headline">JSON-LD Structured Data Schema Markup</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sampleSchema = {
+                        "@context": "https://schema.org",
+                        "@type": "Organization",
+                        "name": "Nitwebs",
+                        "url": "https://nitwebs.com/",
+                        "logo": "https://nitwebs.com/favicon.svg",
+                        "description": "AI-first software development company building custom software, SaaS applications, and cloud infrastructure.",
+                        "email": "sales@nitwebs.com",
+                        "telephone": "+91-911-555-6455"
+                      };
+                      setContent({ ...content, seo: { ...content?.seo, structuredData: JSON.stringify(sampleSchema, null, 2) } });
+                    }}
+                    className="text-xs font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" /> Insert Sample Organization Schema
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">JSON-LD Schema Markup (Valid JSON)</label>
+                  <textarea 
+                    rows={8}
+                    value={content?.seo?.structuredData || ""}
+                    onChange={(e) => setContent({ ...content, seo: { ...content?.seo, structuredData: e.target.value } })}
+                    placeholder='{\n  "@context": "https://schema.org",\n  "@type": "Organization",\n  "name": "Nitwebs"\n}'
+                    className="w-full bg-neutral-900 text-emerald-400 border border-neutral-800 rounded-xl p-4 text-xs font-mono outline-none leading-relaxed"
+                  />
+                  <span className="text-[10px] text-neutral-400 mt-1 block">Injected into page head for Google rich snippets, Knowledge Graphs, and Schema validation.</span>
+                </div>
+              </div>
+
+              {/* Card 5: Custom Header & Footer Code Injection */}
+              <div className="card-panel rounded-2xl p-6 bg-white border border-border flex flex-col gap-6">
+                <div className="border-b border-border pb-2">
+                  <h3 className="text-sm font-bold text-neutral-800 font-headline flex items-center gap-2">
+                    <Code className="w-4 h-4 text-primary" /> Custom Header & Footer Code / Scripts Injection
+                  </h3>
+                  <p className="text-xs text-neutral-500 mt-1">Paste custom HTML tags, tracking scripts, CSS &lt;style&gt; snippets, Meta Pixel, GTM code, or live chat widgets (Tawk.to, Intercom, Zendesk).</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Header Scripts &amp; Code (&lt;head&gt; Injection)</label>
+                    <textarea 
+                      rows={6}
+                      value={content?.seo?.headerCode || ""}
+                      onChange={(e) => setContent({ ...content, seo: { ...content?.seo, headerCode: e.target.value } })}
+                      placeholder="<!-- Custom Meta / CSS / Script tags in <head> -->&#10;<script>&#10;  console.log('Custom Header Script Loaded');&#10;</script>"
+                      className="w-full bg-neutral-900 text-amber-300 border border-neutral-800 rounded-xl p-4 text-xs font-mono outline-none leading-relaxed"
+                    />
+                    <span className="text-[10px] text-neutral-400 mt-1 block">Injected into document &lt;head&gt;. Ideal for Google Tag Manager &lt;head&gt;, Meta Pixel, or verification tags.</span>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Footer Scripts &amp; Code (&lt;/body&gt; Injection)</label>
+                    <textarea 
+                      rows={6}
+                      value={content?.seo?.footerCode || ""}
+                      onChange={(e) => setContent({ ...content, seo: { ...content?.seo, footerCode: e.target.value } })}
+                      placeholder="<!-- Custom Live Chat / Analytics scripts before </body> -->&#10;<script>&#10;  console.log('Custom Footer Widget Loaded');&#10;</script>"
+                      className="w-full bg-neutral-900 text-cyan-300 border border-neutral-800 rounded-xl p-4 text-xs font-mono outline-none leading-relaxed"
+                    />
+                    <span className="text-[10px] text-neutral-400 mt-1 block">Injected before &lt;/body&gt;. Ideal for live chat widgets, popups, or bottom tracking scripts.</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

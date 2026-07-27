@@ -8,6 +8,8 @@ import NotFound from "./NotFound";
 import { useSiteData } from "../hooks/useSiteData";
 import SectionRenderer from "../sections/SectionRenderer";
 
+import { updatePageSEO } from "../lib/seo";
+
 export default function DynamicPage() {
   const { slug } = useParams<{ slug: string }>();
   const { siteData } = useSiteData();
@@ -15,6 +17,17 @@ export default function DynamicPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    if (page?.title) {
+      updatePageSEO({
+        title: page.title,
+        description: page.meta_desc || page.metaDesc,
+        image: page.meta_image || page.metaImage,
+        canonicalUrl: window.location.href
+      });
+    }
+  }, [page]);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -33,8 +46,10 @@ export default function DynamicPage() {
           } else {
             setError(true);
           }
-        } else {
+        } else if (data && (data.title || data.sections)) {
           setPage(data);
+        } else {
+          setError(true);
         }
       } catch (err) {
         setError(true);

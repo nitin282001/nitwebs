@@ -75,7 +75,8 @@ export default function IndustriesOrbit({
   items = []
 }: IndustriesOrbitProps) {
   const displayItems = items.length > 0 ? items : DEFAULT_ITEMS;
-  const [activeIdx, setActiveIdx] = useState<number>(3); // Default to Blockchain item expanded
+  const [rawActiveIdx, setActiveIdx] = useState<number>(0);
+  const activeIdx = Math.max(0, Math.min(rawActiveIdx, displayItems.length - 1));
 
   const badgeText = header?.badge || "TECHNOLOGY SOLUTIONS";
   const titleText = header?.title || "Crafting Solutions with Technology that Works For You";
