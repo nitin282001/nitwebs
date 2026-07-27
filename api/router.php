@@ -7,7 +7,7 @@ $path = preg_replace('/^\/api\/?/', '', $uri);
 
 // Serve static uploads (resumes, gallery photos)
 $staticFile = __DIR__ . '/' . $path;
-if (!empty($path) && file_exists($staticFile) && !is_dir($staticFile)) {
+if (!empty($path) && file_exists($staticFile) && !is_dir($staticFile) && pathinfo($staticFile, PATHINFO_EXTENSION) !== 'php') {
     $mime = mime_content_type($staticFile);
     header("Content-Type: " . ($mime ?: 'application/octet-stream'));
     readfile($staticFile);

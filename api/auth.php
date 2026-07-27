@@ -42,7 +42,11 @@ if ($method === 'GET') {
 
 // 2. POST requests: Login (Step 1), Verify OTP (Step 2), Resend OTP, Update Profile, Test SMTP
 if ($method === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+    if (!is_array($input)) {
+        $input = $_POST;
+    }
     $action = $input['action'] ?? ($input['step'] ?? '');
 
     // Action: Test SMTP Connection
