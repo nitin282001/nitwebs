@@ -1,0 +1,3 @@
+﻿User-agent: *
+Allow: /
+Sitemap: https://nitwebs.com/sitemap.xml

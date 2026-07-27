@@ -7,7 +7,7 @@
 		"dev:frontend": "vite",
 		"dev:backend": "npm run dev --prefix server",
 		"dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-		"build": "tsc -b && vite build",
+		"build": "tsc -b && vite build && node scripts/postbuild.js",
 		"lint": "oxlint",
 		"preview": "vite preview",
 		"deploy": "npm run build && node scripts/deploy.js"

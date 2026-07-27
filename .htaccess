@@ -1,19 +1,12 @@
-<IfModule mod_rewrite.c>
-  RewriteEngine On
+﻿Options -MultiViews
+RewriteEngine On
 
-  # Allow direct access to /api/ endpoints
-  RewriteRule ^api/(.*)$ api/$1 [L]
+# React SPA — serve index.html for all non-file requests
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.html [QSA,L]
 
-  # Serve root request from dist/index.html
-  RewriteRule ^$ dist/index.html [L]
-
-  # Serve static files from dist/ if they exist
-  RewriteCond %{DOCUMENT_ROOT}/dist/$1 -f
-  RewriteRule ^(.*)$ dist/$1 [L]
-
-  # Fallback React SPA routing to dist/index.html for dynamic pages
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_URI} !^/api/
-  RewriteRule ^(.*)$ dist/index.html [QSA,L]
-</IfModule>
+# Block public access to submission logs
+<Files protected_submissions.jsonl>
+  Order Allow,Deny
+  Deny from all
+</Files>
