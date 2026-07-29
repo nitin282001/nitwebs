@@ -77,9 +77,9 @@ $defaultContent = [
         "text" => "Nitwebs"
     ],
     "seo" => [
-        "metaTitle" => "Nitwebs",
-        "metaDescription" => "Nitwebs is an AI-first software development company building custom software, AI agents, mobile apps, and scalable SaaS platforms worldwide.",
-        "metaKeywords" => "AI software development, SaaS engineering, custom software, AI agents, cloud infrastructure, mobile apps",
+        "metaTitle" => "Nitwebs | Custom Software, Web & Mobile App Development Company",
+        "metaDescription" => "Nitwebs is a custom software development company specializing in web applications, mobile apps, SaaS platforms, CRM, ERP, and scalable business solutions for startups and enterprises worldwide.",
+        "metaKeywords" => "custom software development, software development company, web development company, mobile app development, SaaS development, custom web applications, enterprise software, CRM development, ERP development, Laravel development, React development, Vue.js development, Flutter development, eCommerce development, API development, cloud solutions, business software, digital transformation, software outsourcing, Nitwebs",
         "ogImage" => "",
         "canonicalUrl" => "https://nitwebs.com",
         "robots" => "index, follow",
