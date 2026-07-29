@@ -3,6 +3,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mailer.php';
 
 $pdo = getDBConnection();
+ensureAdminSchema($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
 $actionParam = $_GET['action'] ?? '';

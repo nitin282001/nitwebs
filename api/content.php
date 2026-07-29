@@ -93,6 +93,7 @@ $defaultContent = [
 ];
 
 if ($method === 'GET') {
+    header("Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=600");
     $stmt = $pdo->query("SELECT data FROM site_content ORDER BY id ASC LIMIT 1");
     $row = $stmt->fetch();
     if ($row && !empty($row['data'])) {

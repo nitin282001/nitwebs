@@ -26,7 +26,6 @@ function getDBConnection() {
                 PDO::ATTR_EMULATE_PREPARES => false,
             ];
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-            ensureAdminSchema($pdo);
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode(["message" => "Database connection error: " . $e->getMessage()]);

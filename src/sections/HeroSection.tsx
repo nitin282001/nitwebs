@@ -11,9 +11,9 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({
-  badge = "ENGINEERING THE FUTURE",
-  title = "Building Technology That Powers Modern Businesses",
-  desc = "We combine world-class engineering, AI, cloud infrastructure, and product strategy to build scalable software.",
+  badge = "AI-first software development",
+  title = "Nitwebs",
+  desc = "We engineer AI products, scalable software, SaaS platforms, mobile apps, and automation systems for ambitious companies worldwide.",
   btnText = "Get Started",
   btnLink = "#contact"
 }: HeroSectionProps) {

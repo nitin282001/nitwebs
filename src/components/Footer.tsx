@@ -10,7 +10,6 @@ import {
   FaYoutube 
 } from "react-icons/fa6";
 import { 
-  ArrowRight,
   Globe
 } from "lucide-react";
 import NitwebsLogo from "./NitwebsLogo";
@@ -199,7 +198,6 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
 
   const socialList = (Array.isArray(footerData?.social) && footerData.social.length > 0) ? footerData.social : DEFAULT_FOOTER.social;
   const columnsList = (Array.isArray(footerData?.columns) && footerData.columns.length > 0) ? footerData.columns : DEFAULT_FOOTER.columns;
-  const bottomLinksList = (Array.isArray(footerData?.bottomLinks) && footerData.bottomLinks.length > 0) ? footerData.bottomLinks : DEFAULT_FOOTER.bottomLinks;
   const platformsList = Array.isArray(footerData?.platforms) ? footerData.platforms : [];
 
   return (
@@ -304,29 +302,6 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
         <span className="text-xs text-secondary-text">
           {footerData?.copyright || DEFAULT_FOOTER.copyright}
         </span>
-
-        <div className="flex gap-6 text-xs text-secondary-text">
-          {bottomLinksList.map((link, idx) => (
-            <a 
-              key={link.label + idx} 
-              href={link.href || "#"} 
-              onClick={(e) => handleLinkClick(e, link.href || "#")}
-              className="hover:text-foreground transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ArrowRight className="w-3.5 h-3.5 text-primary" />
-          <button 
-            onClick={() => handleScrollToSection("contact")} 
-            className="text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
-          >
-            Book a discovery call
-          </button>
-        </div>
       </div>
     </footer>
   );

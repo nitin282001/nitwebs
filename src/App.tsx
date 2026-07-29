@@ -15,15 +15,7 @@ const Careers = lazy(() => import("./pages/Careers"));
 const JobDetail = lazy(() => import("./pages/JobDetail"));
 
 export default function App() {
-  const { siteData, loading } = useSiteData();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col justify-center items-center">
-        <span className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const { siteData } = useSiteData();
 
   const isUnderConstruction = siteData?.theme?.underConstruction === true;
   const isAdminPath = window.location.pathname.startsWith("/admin");
