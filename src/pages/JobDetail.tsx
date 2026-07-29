@@ -213,7 +213,7 @@ export default function JobDetail() {
             
             {/* Description */}
             <div className="flex flex-col gap-6">
-              <h2 className="text-xl font-normal font-headline text-foreground">Role Description</h2>
+              <h2 className="text-lg sm:text-xl font-medium font-sans text-foreground tracking-tight">Role Description</h2>
               <div 
                 className="text-secondary-text text-sm sm:text-base leading-relaxed font-sans flex flex-col gap-4"
                 dangerouslySetInnerHTML={{ __html: job.description }}
@@ -223,7 +223,7 @@ export default function JobDetail() {
             {/* Requirements Bullet list */}
             {job.requirements && job.requirements.length > 0 && (
               <div className="flex flex-col gap-6 border-t border-border/60 pt-8">
-                <h2 className="text-xl font-normal font-headline text-foreground">Role Requirements</h2>
+                <h2 className="text-lg sm:text-xl font-medium font-sans text-foreground tracking-tight">Role Requirements</h2>
                 <ul className="list-disc list-inside text-secondary-text text-sm sm:text-base leading-relaxed font-sans flex flex-col gap-3 ml-2">
                   {job.requirements.map((reqStr: string, index: number) => (
                     <li key={index} className="pl-1">
@@ -237,7 +237,7 @@ export default function JobDetail() {
             {/* Application Section */}
             <div id="apply-section" className="border-t border-border/80 pt-12 mt-4 flex flex-col gap-8">
               <div>
-                <h2 className="text-2xl font-normal font-headline text-foreground">Apply for this position</h2>
+                <h2 className="text-xl sm:text-2xl font-medium font-sans text-foreground tracking-tight">Apply for this position</h2>
                 <p className="text-xs text-secondary-text mt-1">Please fill out the form below and attach your resume.</p>
               </div>
 
