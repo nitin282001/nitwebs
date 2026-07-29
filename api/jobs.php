@@ -24,6 +24,15 @@ ensureJobsTable($pdo);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+function formatJobItem($job) {
+    if (!$job) return null;
+    $job['_id'] = (string)($job['id'] ?? '');
+    $job['employmentType'] = $job['employment_type'] ?? 'full-time';
+    $job['postedDate'] = $job['posted_date'] ?? date('c');
+    $job['requirements'] = is_array($job['requirements']) ? $job['requirements'] : json_decode($job['requirements'] ?? '[]', true);
+    return $job;
+}
+
 if ($method === 'GET') {
     if (isset($_GET['id']) || isset($_GET['slug'])) {
         $val = $_GET['id'] ?? $_GET['slug'];
@@ -31,18 +40,18 @@ if ($method === 'GET') {
         $stmt->execute([$val, $val]);
         $job = $stmt->fetch();
         if ($job) {
-            $job['requirements'] = json_decode($job['requirements'] ?? '[]', true);
-            sendJSON($job);
+            sendJSON(formatJobItem($job));
         }
         sendJSON(["message" => "Job not found"], 404);
     }
 
     $stmt = $pdo->query("SELECT * FROM jobs ORDER BY posted_date DESC");
     $jobs = $stmt->fetchAll();
-    foreach ($jobs as &$j) {
-        $j['requirements'] = json_decode($j['requirements'] ?? '[]', true);
+    $formatted = [];
+    foreach ($jobs as $j) {
+        $formatted[] = formatJobItem($j);
     }
-    sendJSON($jobs);
+    sendJSON($formatted);
 }
 
 if ($method === 'POST') {

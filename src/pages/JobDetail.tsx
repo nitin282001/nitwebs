@@ -121,7 +121,7 @@ export default function JobDetail() {
     formData.append("email", email);
     formData.append("phone", phone);
     formData.append("coverNote", coverNote);
-    formData.append("jobId", job._id);
+    formData.append("jobId", job._id || job.id);
     formData.append("resume", resume);
 
     try {
@@ -193,15 +193,15 @@ export default function JobDetail() {
             <div className="flex flex-wrap gap-5 text-sm text-secondary-text font-sans mt-2 border-t border-b border-border/60 py-4">
               <span className="flex items-center gap-1.5">
                 <Briefcase className="w-4 h-4 text-secondary-text" />
-                {job.employmentType.replace("-", " ")}
+                {(job.employmentType || job.employment_type || "full-time").replace("-", " ")}
               </span>
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-secondary-text" />
-                {job.location}
+                {job.location || "Remote"}
               </span>
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-secondary-text" />
-                Posted: {new Date(job.postedDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                Posted: {new Date(job.postedDate || job.posted_date || Date.now()).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
               </span>
             </div>
           </div>

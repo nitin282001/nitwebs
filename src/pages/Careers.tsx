@@ -100,45 +100,50 @@ export default function Careers() {
               </Reveal>
             ) : (
               <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                {jobs.map((job) => (
-                  <Link
-                    key={job._id}
-                    to={`/careers/${job.slug}`}
-                    className="group relative rounded-2xl border border-border/80 bg-surface/40 p-6 sm:p-7 transition-all duration-300 hover:border-primary/50 hover:bg-surface/80 hover:shadow-xl backdrop-blur-sm flex flex-col justify-between"
-                  >
-                    <div className="flex flex-col gap-4 flex-1">
-                      <div className="flex justify-between items-start gap-3">
-                        <h3 className="text-xl font-normal font-headline text-foreground group-hover:text-primary transition-colors leading-snug">
-                          {job.title}
-                        </h3>
-                        <span className="text-[11px] font-mono font-semibold tracking-wider text-primary dark:text-purple-300 uppercase px-3 py-1 rounded-full bg-primary/10 border border-primary/20 shrink-0">
-                          {job.employmentType.replace("-", " ")}
-                        </span>
-                      </div>
-                      
-                      <p className="text-secondary-text text-sm leading-relaxed flex-1 font-sans">
-                        {job.summary}
-                      </p>
-
-                      <div className="border-t border-border/60 pt-4 mt-2 flex flex-wrap gap-4 items-center justify-between text-xs text-secondary-text font-sans">
-                        <div className="flex items-center gap-4">
-                          <span className="flex items-center gap-1.5">
-                            <Briefcase className="w-3.5 h-3.5 text-primary" />
-                            {job.department || "Engineering"}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-primary" />
-                            {job.location}
+                {jobs.map((job) => {
+                  const empType = job.employmentType || job.employment_type || "full-time";
+                  const postedDateVal = job.postedDate || job.posted_date || Date.now();
+                  const jobId = job._id || job.id;
+                  return (
+                    <Link
+                      key={jobId}
+                      to={`/careers/${job.slug}`}
+                      className="group relative rounded-2xl border border-border/80 bg-surface/40 p-6 sm:p-7 transition-all duration-300 hover:border-primary/50 hover:bg-surface/80 hover:shadow-xl backdrop-blur-sm flex flex-col justify-between"
+                    >
+                      <div className="flex flex-col gap-4 flex-1">
+                        <div className="flex justify-between items-start gap-3">
+                          <h3 className="text-xl font-normal font-headline text-foreground group-hover:text-primary transition-colors leading-snug">
+                            {job.title}
+                          </h3>
+                          <span className="text-[11px] font-mono font-semibold tracking-wider text-primary dark:text-purple-300 uppercase px-3 py-1 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+                            {empType.replace("-", " ")}
                           </span>
                         </div>
-                        <span className="flex items-center gap-1 text-[11px] text-secondary-text">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {new Date(job.postedDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                        </span>
+                        
+                        <p className="text-secondary-text text-sm leading-relaxed flex-1 font-sans">
+                          {job.summary}
+                        </p>
+
+                        <div className="border-t border-border/60 pt-4 mt-2 flex flex-wrap gap-4 items-center justify-between text-xs text-secondary-text font-sans">
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1.5">
+                              <Briefcase className="w-3.5 h-3.5 text-primary" />
+                              {job.department || "Engineering"}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-primary" />
+                              {job.location || "Remote"}
+                            </span>
+                          </div>
+                          <span className="flex items-center gap-1 text-[11px] text-secondary-text">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(postedDateVal).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </StaggerGrid>
             )}
           </div>
