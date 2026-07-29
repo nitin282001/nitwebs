@@ -68,7 +68,8 @@ export const DEFAULT_SITE_DATA = {
   },
   logo: {
     mode: "text",
-    text: "Nitwebs"
+    text: "Nitwebs",
+    faviconUrl: "/favicon.png"
   },
   seo: {
     metaTitle: "Nitwebs | Custom Software, Web & Mobile App Development Company",
