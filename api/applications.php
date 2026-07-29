@@ -26,7 +26,32 @@ if ($method === 'GET') {
     verifyAdminToken();
     $stmt = $pdo->query("SELECT * FROM applications ORDER BY submitted_at DESC");
     $apps = $stmt->fetchAll();
-    sendJSON($apps);
+    
+    $jobMap = [];
+    try {
+        $jStmt = $pdo->query("SELECT id, title FROM jobs");
+        if ($jStmt) {
+            while ($jRow = $jStmt->fetch()) {
+                $jobMap[(string)$jRow['id']] = $jRow['title'];
+            }
+        }
+    } catch (Exception $e) {}
+
+    $formatted = [];
+    foreach ($apps as $a) {
+        $jId = (string)($a['job_id'] ?? '0');
+        $resolvedTitle = !empty($a['job_title']) ? $a['job_title'] : ($jobMap[$jId] ?? 'General Application');
+
+        $a['_id'] = (string)$a['id'];
+        $a['jobId'] = $jId;
+        $a['jobTitle'] = $resolvedTitle;
+        $a['job_title'] = $resolvedTitle;
+        $a['resumePath'] = $a['resume_path'] ?? '';
+        $a['coverNote'] = $a['cover_note'] ?? '';
+        $a['submittedAt'] = !empty($a['submitted_at']) ? $a['submitted_at'] : date('Y-m-d H:i:s');
+        $formatted[] = $a;
+    }
+    sendJSON($formatted);
 }
 
 if ($method === 'POST') {

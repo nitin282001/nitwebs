@@ -42,7 +42,7 @@ import {
 
 import { hexToHsl } from "../lib/utils";
 
-import { API_BASE } from "../lib/api";
+import { API_BASE, getUploadUrl } from "../lib/api";
 
 const SECTION_ANCHORS = [
   { id: "hero", label: "Hero Banner (#hero)" },
@@ -4839,60 +4839,73 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {adminApps.map((app) => (
-                    <div key={app._id} className="bg-neutral-50/50 border border-border/80 rounded-2xl p-5 md:p-6 flex flex-col gap-4 relative hover:shadow-sm transition-all text-left">
-                      <button
-                        onClick={() => handleDeleteApp(app._id)}
-                        className="absolute top-4 right-4 text-neutral-400 hover:text-red-500 p-1 cursor-pointer"
-                        title="Delete Application"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                  {adminApps.map((app) => {
+                    const jobTitleName = app.jobTitle || app.job_title || app.jobName || app.job_name || "General Position";
+                    const submittedDateVal = app.submittedAt || app.submitted_at || app.created_at || app.createdAt;
+                    const rawResumePath = app.resumePath || app.resume_path || app.resume || "";
+                    const resumeUrl = rawResumePath ? getUploadUrl(rawResumePath) : "";
+                    const appId = app._id || app.id;
 
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-3 pr-8">
-                        <div>
-                          <h3 className="text-sm font-bold text-foreground font-sans">{app.name}</h3>
-                          <p className="text-xs text-neutral-500 font-sans mt-0.5">
-                            Applied for: <span className="font-bold text-primary">{app.jobTitle}</span>
-                          </p>
-                        </div>
-                        <span className="text-[10px] text-neutral-400 font-sans">
-                          {new Date(app.submittedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
+                    return (
+                      <div key={appId} className="bg-neutral-50/50 border border-border/80 rounded-2xl p-5 md:p-6 flex flex-col gap-4 relative hover:shadow-sm transition-all text-left">
+                        <button
+                          onClick={() => handleDeleteApp(appId)}
+                          className="absolute top-4 right-4 text-neutral-400 hover:text-red-500 p-1 cursor-pointer"
+                          title="Delete Application"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans text-neutral-700">
-                        <div className="flex items-center gap-2">
-                          <strong className="text-neutral-500 uppercase tracking-widest text-[9px] w-12 shrink-0">Email:</strong>
-                          <a href={`mailto:${app.email}`} className="text-primary hover:underline truncate">{app.email}</a>
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-3 pr-8">
+                          <div>
+                            <h3 className="text-sm font-bold text-foreground font-sans">{app.name}</h3>
+                            <p className="text-xs text-neutral-500 font-sans mt-0.5">
+                              Applied for: <span className="font-bold text-primary">{jobTitleName}</span>
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-neutral-400 font-sans">
+                            {submittedDateVal ? new Date(submittedDateVal).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently"}
+                          </span>
                         </div>
-                        {app.phone && (
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans text-neutral-700">
                           <div className="flex items-center gap-2">
-                            <strong className="text-neutral-500 uppercase tracking-widest text-[9px] w-12 shrink-0">Phone:</strong>
-                            <span>{app.phone}</span>
+                            <strong className="text-neutral-500 uppercase tracking-widest text-[9px] w-12 shrink-0">Email:</strong>
+                            <a href={`mailto:${app.email}`} className="text-primary hover:underline truncate">{app.email}</a>
+                          </div>
+                          {app.phone && (
+                            <div className="flex items-center gap-2">
+                              <strong className="text-neutral-500 uppercase tracking-widest text-[9px] w-12 shrink-0">Phone:</strong>
+                              <span>{app.phone}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {(app.coverNote || app.cover_note) && (
+                          <div className="bg-white border border-border/50 rounded-xl p-4 text-xs leading-relaxed text-secondary-text font-sans">
+                            <strong className="text-neutral-600 block mb-1">Cover Note:</strong>
+                            <p className="whitespace-pre-wrap">{app.coverNote || app.cover_note}</p>
                           </div>
                         )}
-                      </div>
 
-                      {app.coverNote && (
-                        <div className="bg-white border border-border/50 rounded-xl p-4 text-xs leading-relaxed text-secondary-text font-sans">
-                          <strong className="text-neutral-600 block mb-1">Cover Note:</strong>
-                          <p className="whitespace-pre-wrap">{app.coverNote}</p>
+                        <div className="flex justify-end pt-2">
+                          {resumeUrl ? (
+                            <a
+                              href={resumeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              className="inline-flex items-center gap-1.5 px-4.5 py-2 bg-primary text-white text-xs font-semibold rounded-full hover:opacity-90 transition-all shadow cursor-pointer"
+                            >
+                              <Upload className="w-3.5 h-3.5 rotate-180" /> Download Resume (PDF/DOC)
+                            </a>
+                          ) : (
+                            <span className="text-xs text-neutral-400 italic font-sans">No Resume File Uploaded</span>
+                          )}
                         </div>
-                      )}
-
-                      <div className="flex justify-end pt-2">
-                        <a
-                          href={`http://localhost:5000${app.resumePath}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-4.5 py-2 bg-primary text-white text-xs font-semibold rounded-full hover:opacity-90 transition-all shadow"
-                        >
-                          <Upload className="w-3.5 h-3.5 rotate-180" /> Download Resume (PDF/DOC)
-                        </a>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

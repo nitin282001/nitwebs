@@ -122,6 +122,7 @@ export default function JobDetail() {
     formData.append("phone", phone);
     formData.append("coverNote", coverNote);
     formData.append("jobId", job._id || job.id);
+    formData.append("jobTitle", job.title || "");
     formData.append("resume", resume);
 
     try {
