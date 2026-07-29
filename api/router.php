@@ -19,10 +19,24 @@ if (strpos($path, 'auth') === 0) {
     exit;
 }
 if (strpos($path, 'admin/jobs') === 0 || strpos($path, 'jobs') === 0) {
+    $parts = explode('/', trim($path, '/'));
+    $last = end($parts);
+    if (!empty($last) && $last !== 'jobs' && $last !== 'admin') {
+        if (is_numeric($last)) {
+            $_GET['id'] = $last;
+        } else {
+            $_GET['slug'] = $last;
+        }
+    }
     require __DIR__ . '/jobs.php';
     exit;
 }
 if (strpos($path, 'admin/applications') === 0 || strpos($path, 'applications') === 0) {
+    $parts = explode('/', trim($path, '/'));
+    $last = end($parts);
+    if (!empty($last) && $last !== 'applications' && $last !== 'admin' && is_numeric($last)) {
+        $_GET['id'] = $last;
+    }
     require __DIR__ . '/applications.php';
     exit;
 }

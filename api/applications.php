@@ -2,6 +2,24 @@
 require_once __DIR__ . '/db.php';
 
 $pdo = getDBConnection();
+
+function ensureApplicationsTable($pdo) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `applications` (
+          `id` INT AUTO_INCREMENT PRIMARY KEY,
+          `job_id` VARCHAR(100) DEFAULT '0',
+          `job_title` VARCHAR(255) DEFAULT '',
+          `name` VARCHAR(255) NOT NULL,
+          `email` VARCHAR(255) NOT NULL,
+          `phone` VARCHAR(100) DEFAULT '',
+          `resume_path` VARCHAR(500) NOT NULL,
+          `cover_note` TEXT,
+          `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {}
+}
+ensureApplicationsTable($pdo);
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {

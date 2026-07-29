@@ -2,6 +2,26 @@
 require_once __DIR__ . '/db.php';
 
 $pdo = getDBConnection();
+
+function ensureJobsTable($pdo) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `jobs` (
+          `id` INT AUTO_INCREMENT PRIMARY KEY,
+          `title` VARCHAR(255) NOT NULL,
+          `slug` VARCHAR(255) NOT NULL UNIQUE,
+          `department` VARCHAR(100) DEFAULT '',
+          `location` VARCHAR(100) DEFAULT 'Remote',
+          `employment_type` VARCHAR(50) DEFAULT 'full-time',
+          `summary` TEXT,
+          `description` LONGTEXT,
+          `requirements` LONGTEXT,
+          `status` VARCHAR(50) DEFAULT 'open',
+          `posted_date` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {}
+}
+ensureJobsTable($pdo);
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
