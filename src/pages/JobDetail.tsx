@@ -191,13 +191,13 @@ export default function JobDetail() {
             </Reveal>
 
             <div className="flex flex-wrap gap-5 text-sm text-secondary-text font-sans mt-2 border-t border-b border-border/60 py-4">
-              <span className="flex items-center gap-1.5">
-                <Briefcase className="w-4 h-4 text-secondary-text" />
+              <span className="flex items-center gap-1.5 capitalize">
+                <Briefcase className="w-4 h-4 text-primary" />
                 {(job.employmentType || job.employment_type || "full-time").replace("-", " ")}
               </span>
-              <span className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-secondary-text" />
-                {job.location || "Remote"}
+              <span className="flex items-center gap-1.5 text-foreground font-medium">
+                <MapPin className="w-4 h-4 text-primary" />
+                Location: {job.location || "Remote"}
               </span>
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-secondary-text" />
@@ -213,7 +213,7 @@ export default function JobDetail() {
             
             {/* Description */}
             <div className="flex flex-col gap-6">
-              <h2 className="text-xl font-bold font-headline text-foreground">Role Description</h2>
+              <h2 className="text-xl font-normal font-headline text-foreground">Role Description</h2>
               <div 
                 className="text-secondary-text text-sm sm:text-base leading-relaxed font-sans flex flex-col gap-4"
                 dangerouslySetInnerHTML={{ __html: job.description }}
@@ -223,7 +223,7 @@ export default function JobDetail() {
             {/* Requirements Bullet list */}
             {job.requirements && job.requirements.length > 0 && (
               <div className="flex flex-col gap-6 border-t border-border/60 pt-8">
-                <h2 className="text-xl font-bold font-headline text-foreground">Role Requirements</h2>
+                <h2 className="text-xl font-normal font-headline text-foreground">Role Requirements</h2>
                 <ul className="list-disc list-inside text-secondary-text text-sm sm:text-base leading-relaxed font-sans flex flex-col gap-3 ml-2">
                   {job.requirements.map((reqStr: string, index: number) => (
                     <li key={index} className="pl-1">
@@ -237,7 +237,7 @@ export default function JobDetail() {
             {/* Application Section */}
             <div id="apply-section" className="border-t border-border/80 pt-12 mt-4 flex flex-col gap-8">
               <div>
-                <h2 className="text-2xl font-bold font-headline text-foreground">Apply for this position</h2>
+                <h2 className="text-2xl font-normal font-headline text-foreground">Apply for this position</h2>
                 <p className="text-xs text-secondary-text mt-1">Please fill out the form below and attach your resume.</p>
               </div>
 

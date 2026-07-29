@@ -4489,13 +4489,29 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Location</label>
-                              <input
-                                type="text"
-                                value={newJobLocation}
-                                onChange={(e) => setNewJobLocation(e.target.value)}
-                                placeholder="e.g. Remote"
-                                className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-3.5 py-2 text-xs text-neutral-900 outline-none"
-                              />
+                              <div className="flex flex-col gap-1.5">
+                                <select
+                                  value={["Onsite", "Remote", "Hybrid", "Ludhiana, Punjab", "Greater Noida, UP"].includes(newJobLocation) ? newJobLocation : "Custom"}
+                                  onChange={(e) => {
+                                    if (e.target.value !== "Custom") setNewJobLocation(e.target.value);
+                                  }}
+                                  className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-3 py-1.5 text-xs text-neutral-900 outline-none cursor-pointer"
+                                >
+                                  <option value="Onsite">Onsite</option>
+                                  <option value="Remote">Remote</option>
+                                  <option value="Hybrid">Hybrid</option>
+                                  <option value="Ludhiana, Punjab">Ludhiana, Punjab</option>
+                                  <option value="Greater Noida, UP">Greater Noida, UP</option>
+                                  <option value="Custom">Custom Location...</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={newJobLocation}
+                                  onChange={(e) => setNewJobLocation(e.target.value)}
+                                  placeholder="e.g. Onsite, Remote, or city"
+                                  className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-3.5 py-1.5 text-xs text-neutral-900 outline-none"
+                                />
+                              </div>
                             </div>
                             <div>
                               <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Employment Type</label>
@@ -4672,12 +4688,29 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Location</label>
-                          <input
-                            type="text"
-                            value={editingJob.location || ""}
-                            onChange={(e) => setEditingJob({ ...editingJob, location: e.target.value })}
-                            className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
-                          />
+                          <div className="flex flex-col gap-1.5">
+                            <select
+                              value={["Onsite", "Remote", "Hybrid", "Ludhiana, Punjab", "Greater Noida, UP"].includes(editingJob.location) ? editingJob.location : "Custom"}
+                              onChange={(e) => {
+                                if (e.target.value !== "Custom") setEditingJob({ ...editingJob, location: e.target.value });
+                              }}
+                              className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-3.5 py-2 text-xs text-neutral-900 outline-none cursor-pointer"
+                            >
+                              <option value="Onsite">Onsite</option>
+                              <option value="Remote">Remote</option>
+                              <option value="Hybrid">Hybrid</option>
+                              <option value="Ludhiana, Punjab">Ludhiana, Punjab</option>
+                              <option value="Greater Noida, UP">Greater Noida, UP</option>
+                              <option value="Custom">Custom Location...</option>
+                            </select>
+                            <input
+                              type="text"
+                              value={editingJob.location || ""}
+                              onChange={(e) => setEditingJob({ ...editingJob, location: e.target.value })}
+                              placeholder="e.g. Onsite, Remote, or city"
+                              className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-2 text-xs text-neutral-900 outline-none"
+                            />
+                          </div>
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Employment Type</label>
