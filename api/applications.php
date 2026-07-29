@@ -42,11 +42,18 @@ if ($method === 'GET') {
         $jId = (string)($a['job_id'] ?? '0');
         $resolvedTitle = !empty($a['job_title']) ? $a['job_title'] : ($jobMap[$jId] ?? 'General Application');
 
+        $rawPath = $a['resume_path'] ?? '';
+        $cleanPath = preg_replace('/^https?:\/\/[^\/]+/i', '', $rawPath);
+        if (!empty($cleanPath) && strpos($cleanPath, '/') !== 0) {
+            $cleanPath = '/' . $cleanPath;
+        }
+
         $a['_id'] = (string)$a['id'];
         $a['jobId'] = $jId;
         $a['jobTitle'] = $resolvedTitle;
         $a['job_title'] = $resolvedTitle;
-        $a['resumePath'] = $a['resume_path'] ?? '';
+        $a['resumePath'] = $cleanPath;
+        $a['resume_path'] = $cleanPath;
         $a['coverNote'] = $a['cover_note'] ?? '';
         $a['submittedAt'] = !empty($a['submitted_at']) ? $a['submitted_at'] : date('Y-m-d H:i:s');
         $formatted[] = $a;
