@@ -31,6 +31,7 @@ export default function JobDetail() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
   const [coverNote, setCoverNote] = useState("");
   const [resume, setResume] = useState<File | null>(null);
   
@@ -113,6 +114,15 @@ export default function JobDetail() {
       return;
     }
 
+    const minExpReq = (job.minExperience !== undefined ? job.minExperience : job.min_experience) ?? 0;
+    if (minExpReq > 0) {
+      const parsedExp = parseInt(experienceYears) || 0;
+      if (!experienceYears || parsedExp < minExpReq) {
+        setErrorMsg(`This position requires a minimum of ${minExpReq} years of experience. You entered ${parsedExp} years.`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     setErrorMsg("");
 
@@ -120,6 +130,7 @@ export default function JobDetail() {
     formData.append("name", name);
     formData.append("email", email);
     formData.append("phone", phone);
+    formData.append("experienceYears", experienceYears || "0");
     formData.append("coverNote", coverNote);
     formData.append("jobId", job._id || job.id);
     formData.append("jobTitle", job.title || "");
@@ -200,6 +211,22 @@ export default function JobDetail() {
                 <MapPin className="w-4 h-4 text-primary" />
                 Location: {job.location || "Remote"}
               </span>
+              {(job.minExperience || job.min_experience || 0) > 0 && (
+                <span className="flex items-center gap-1.5 text-foreground font-medium">
+                  <Briefcase className="w-4 h-4 text-primary" />
+                  Min Exp: {job.minExperience || job.min_experience}+ Yrs
+                </span>
+              )}
+              {(job.experienceLevel || job.experience_level) && (
+                <span className="flex items-center gap-1.5">
+                  Level: {job.experienceLevel || job.experience_level}
+                </span>
+              )}
+              {(job.salaryRange || job.salary_range) && (
+                <span className="flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                  Salary: {job.salaryRange || job.salary_range}
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-secondary-text" />
                 Posted: {new Date(job.postedDate || job.posted_date || Date.now()).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
@@ -256,8 +283,9 @@ export default function JobDetail() {
               ) : (
                 <form onSubmit={handleSubmit} className="bg-muted/50 border border-border/80 rounded-2xl p-6 md:p-8 flex flex-col gap-6 max-w-2xl animate-in fade-in duration-200">
                   {errorMsg && (
-                    <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/50 rounded-xl p-4 text-xs font-semibold">
-                      {errorMsg}
+                    <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-4 text-xs font-semibold flex items-center gap-2 shadow-sm">
+                      <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                      <span>{errorMsg}</span>
                     </div>
                   )}
 
@@ -298,6 +326,25 @@ export default function JobDetail() {
                     </div>
 
                     <div>
+                      <label className="text-[10px] font-bold text-secondary-text uppercase tracking-widest block mb-2">
+                        Years of Experience {((job.minExperience || job.min_experience || 0) > 0) ? "*" : "(Optional)"}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="50"
+                        required={(job.minExperience || job.min_experience || 0) > 0}
+                        value={experienceYears}
+                        onChange={(e) => {
+                          setErrorMsg("");
+                          setExperienceYears(e.target.value);
+                        }}
+                        placeholder={((job.minExperience || job.min_experience || 0) > 0) ? `e.g. ${job.minExperience || job.min_experience} (Min required: ${job.minExperience || job.min_experience} yrs)` : "e.g. 3"}
+                        className="w-full bg-background border border-border focus:border-primary/50 rounded-xl px-4 py-2.5 text-sm text-foreground outline-none transition-all font-sans"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
                       <label className="text-[10px] font-bold text-secondary-text uppercase tracking-widest block mb-2">Resume Attachment (.pdf, .doc, .docx) *</label>
                       <div className="relative w-full flex items-center bg-background border border-border rounded-xl px-4 py-2 text-sm text-foreground overflow-hidden cursor-pointer hover:bg-muted transition-colors">
                         <Upload className="w-4 h-4 text-secondary-text mr-2 shrink-0" />

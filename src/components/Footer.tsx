@@ -101,10 +101,21 @@ const iconMap: Record<string, any> = {
   youtube: FaYoutube
 };
 
+const getInitialFooter = (): FooterData => {
+  try {
+    const cached = localStorage.getItem("nitwebs_footer_links");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && typeof parsed === "object") return parsed;
+    }
+  } catch (e) {}
+  return DEFAULT_FOOTER;
+};
+
 export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
   const { logoConfig: contextLogoConfig, setLogoConfig } = useIntroAnimation();
   const effectiveLogoConfig = propsLogoConfig || contextLogoConfig;
-  const [footerData, setFooterData] = useState<FooterData>(DEFAULT_FOOTER);
+  const [footerData, setFooterData] = useState<FooterData>(getInitialFooter);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -116,14 +127,18 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
       })
       .then((data) => {
         if (data && typeof data === "object") {
-          setFooterData({
+          const merged: FooterData = {
             tagline: data.tagline || DEFAULT_FOOTER.tagline,
             columns: (Array.isArray(data.columns) && data.columns.length > 0) ? data.columns : DEFAULT_FOOTER.columns,
             social: (Array.isArray(data.social) && data.social.length > 0) ? data.social : DEFAULT_FOOTER.social,
             bottomLinks: (Array.isArray(data.bottomLinks) && data.bottomLinks.length > 0) ? data.bottomLinks : DEFAULT_FOOTER.bottomLinks,
             platforms: Array.isArray(data.platforms) ? data.platforms : DEFAULT_FOOTER.platforms,
             copyright: data.copyright || DEFAULT_FOOTER.copyright
-          });
+          };
+          setFooterData(merged);
+          try {
+            localStorage.setItem("nitwebs_footer_links", JSON.stringify(merged));
+          } catch (e) {}
         }
       })
       .catch((err) => {

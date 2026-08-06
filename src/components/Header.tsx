@@ -30,16 +30,30 @@ interface HeaderProps {
 }
 
 const DEFAULT_LINKS: NavLinkData[] = [
-  { label: "Services",  type: "scroll", target: "services",  children: [] },
-  { label: "Work",      type: "scroll", target: "showcase",  children: [] },
-  { label: "Process",   type: "scroll", target: "process",   children: [] },
-  { label: "Platform",  type: "scroll", target: "platform",  children: [] }
+  { label: "Home",       type: "page",   target: "/",          children: [] },
+  { label: "Services",   type: "scroll", target: "services",   children: [] },
+  { label: "About",      type: "scroll", target: "about",      children: [] },
+  { label: "Work",       type: "scroll", target: "showcase",   children: [] },
+  { label: "Industries", type: "scroll", target: "industries", children: [] },
+  { label: "Contact",    type: "scroll", target: "contact",    children: [] },
+  { label: "Careers",    type: "page",   target: "/careers",   children: [] }
 ];
+
+const getInitialLinks = (): NavLinkData[] => {
+  try {
+    const cached = localStorage.getItem("nitwebs_nav_links");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+  return DEFAULT_LINKS;
+};
 
 export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: HeaderProps) {
   const { isTransitioned, shouldPlay, logoConfig: contextLogoConfig, setLogoConfig } = useIntroAnimation();
   const effectiveLogoConfig = propsLogoConfig || contextLogoConfig;
-  const [links, setLinks] = useState<NavLinkData[]>(DEFAULT_LINKS);
+  const [links, setLinks] = useState<NavLinkData[]>(getInitialLinks);
   const [ctaLabel, setCtaLabel] = useState("Get Started");
   const [ctaType, setCtaType] = useState<"scroll" | "page" | "url">("scroll");
   const [ctaTarget, setCtaTarget] = useState("contact");
@@ -68,6 +82,9 @@ export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: 
       .then((data) => {
         if (data.links && data.links.length > 0) {
           setLinks(data.links);
+          try {
+            localStorage.setItem("nitwebs_nav_links", JSON.stringify(data.links));
+          } catch (e) {}
         }
         if (data.ctaLabel) setCtaLabel(data.ctaLabel);
         if (data.ctaType) setCtaType(data.ctaType);

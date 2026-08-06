@@ -43,6 +43,7 @@ import {
 import { hexToHsl } from "../lib/utils";
 
 import { API_BASE, getUploadUrl } from "../lib/api";
+import { DEFAULT_SITE_DATA } from "../lib/defaultSiteData";
 
 const SECTION_ANCHORS = [
   { id: "hero", label: "Hero Banner (#hero)" },
@@ -206,6 +207,9 @@ export default function AdminDashboard() {
   const [newJobDept, setNewJobDept] = useState("");
   const [newJobLocation, setNewJobLocation] = useState("Remote");
   const [newJobType, setNewJobType] = useState("full-time");
+  const [newJobMinExperience, setNewJobMinExperience] = useState<number>(0);
+  const [newJobExperienceLevel, setNewJobExperienceLevel] = useState("");
+  const [newJobSalaryRange, setNewJobSalaryRange] = useState("");
   const [newJobSummary, setNewJobSummary] = useState("");
   const [newJobDesc, setNewJobDesc] = useState("");
   const [newJobRequirements, setNewJobRequirements] = useState<string[]>([]);
@@ -484,9 +488,14 @@ export default function AdminDashboard() {
       const res = await fetch(`${API_BASE}/content`);
       if (!res.ok) throw new Error("Failed to load content.");
       const data = await res.json();
-      setContent(data);
+      if (data && typeof data === "object" && (data.hero || data.logo)) {
+        setContent(data);
+      } else {
+        setContent(DEFAULT_SITE_DATA);
+      }
     } catch (err) {
       console.error(err);
+      setContent(DEFAULT_SITE_DATA);
     } finally {
       setLoading(false);
     }
@@ -679,6 +688,9 @@ export default function AdminDashboard() {
           department: newJobDept,
           location: newJobLocation,
           employmentType: newJobType,
+          minExperience: newJobMinExperience,
+          experienceLevel: newJobExperienceLevel,
+          salaryRange: newJobSalaryRange,
           summary: newJobSummary,
           description: newJobDesc,
           requirements: newJobRequirements,
@@ -693,6 +705,9 @@ export default function AdminDashboard() {
       setNewJobDept("");
       setNewJobLocation("Remote");
       setNewJobType("full-time");
+      setNewJobMinExperience(0);
+      setNewJobExperienceLevel("");
+      setNewJobSalaryRange("");
       setNewJobSummary("");
       setNewJobDesc("");
       setNewJobRequirements([]);
@@ -4526,6 +4541,39 @@ export default function AdminDashboard() {
                                 <option value="internship">Internship</option>
                               </select>
                             </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Min Experience (Years Required)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                max="30"
+                                value={newJobMinExperience}
+                                onChange={(e) => setNewJobMinExperience(parseInt(e.target.value) || 0)}
+                                placeholder="0 (No minimum experience)"
+                                className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-3.5 py-2 text-xs text-neutral-900 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Experience Level Label</label>
+                              <input
+                                type="text"
+                                value={newJobExperienceLevel}
+                                onChange={(e) => setNewJobExperienceLevel(e.target.value)}
+                                placeholder="e.g. Mid-Senior Level or 3+ Years"
+                                className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-3.5 py-2 text-xs text-neutral-900 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Salary Range / Compensation</label>
+                              <input
+                                type="text"
+                                value={newJobSalaryRange}
+                                onChange={(e) => setNewJobSalaryRange(e.target.value)}
+                                placeholder="e.g. $120,000 - $150,000 / year"
+                                className="w-full bg-neutral-50 border border-neutral-200 focus:border-primary/50 focus:bg-white rounded-xl px-3.5 py-2 text-xs text-neutral-900 outline-none"
+                              />
+                            </div>
                           </div>
 
                           <div>
@@ -4736,6 +4784,38 @@ export default function AdminDashboard() {
                             <option value="closed">Closed (Archived / Closed)</option>
                           </select>
                         </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Min Experience (Years Required)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="30"
+                            value={editingJob.minExperience ?? editingJob.min_experience ?? 0}
+                            onChange={(e) => setEditingJob({ ...editingJob, minExperience: parseInt(e.target.value) || 0, min_experience: parseInt(e.target.value) || 0 })}
+                            placeholder="0 (No minimum experience)"
+                            className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Experience Level Label</label>
+                          <input
+                            type="text"
+                            value={editingJob.experienceLevel || editingJob.experience_level || ""}
+                            onChange={(e) => setEditingJob({ ...editingJob, experienceLevel: e.target.value, experience_level: e.target.value })}
+                            placeholder="e.g. Mid-Senior Level or 3+ Years"
+                            className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-2">Salary Range / Compensation</label>
+                          <input
+                            type="text"
+                            value={editingJob.salaryRange || editingJob.salary_range || ""}
+                            onChange={(e) => setEditingJob({ ...editingJob, salaryRange: e.target.value, salary_range: e.target.value })}
+                            placeholder="e.g. $120,000 - $150,000 / year"
+                            className="w-full bg-white border border-neutral-200 focus:border-primary/50 rounded-xl px-4 py-2.5 text-sm text-neutral-900 outline-none"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -4868,7 +4948,7 @@ export default function AdminDashboard() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans text-neutral-700">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans text-neutral-700">
                           <div className="flex items-center gap-2">
                             <strong className="text-neutral-500 uppercase tracking-widest text-[9px] w-12 shrink-0">Email:</strong>
                             <a href={`mailto:${app.email}`} className="text-primary hover:underline truncate">{app.email}</a>
@@ -4879,6 +4959,10 @@ export default function AdminDashboard() {
                               <span>{app.phone}</span>
                             </div>
                           )}
+                          <div className="flex items-center gap-2">
+                            <strong className="text-neutral-500 uppercase tracking-widest text-[9px] w-16 shrink-0">Experience:</strong>
+                            <span className="font-bold text-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[11px]">{app.experienceYears ?? app.experience_years ?? 0} Years</span>
+                          </div>
                         </div>
 
                         {(app.coverNote || app.cover_note) && (

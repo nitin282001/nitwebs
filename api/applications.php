@@ -12,10 +12,17 @@ function ensureApplicationsTable($pdo) {
           `name` VARCHAR(255) NOT NULL,
           `email` VARCHAR(255) NOT NULL,
           `phone` VARCHAR(100) DEFAULT '',
+          `experience_years` INT DEFAULT 0,
           `resume_path` VARCHAR(500) NOT NULL,
           `cover_note` TEXT,
           `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $stmt = $pdo->query("SHOW COLUMNS FROM `applications`");
+        $columns = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        if (!in_array('experience_years', $columns)) {
+            $pdo->exec("ALTER TABLE `applications` ADD COLUMN `experience_years` INT DEFAULT 0");
+        }
     } catch (Exception $e) {}
 }
 ensureApplicationsTable($pdo);
@@ -52,6 +59,7 @@ if ($method === 'GET') {
         $a['jobId'] = $jId;
         $a['jobTitle'] = $resolvedTitle;
         $a['job_title'] = $resolvedTitle;
+        $a['experienceYears'] = (int)($a['experience_years'] ?? 0);
         $a['resumePath'] = $cleanPath;
         $a['resume_path'] = $cleanPath;
         $a['coverNote'] = $a['cover_note'] ?? '';
@@ -67,6 +75,7 @@ if ($method === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
+    $experienceYears = (int)($_POST['experienceYears'] ?? $_POST['experience'] ?? 0);
     $coverNote = trim($_POST['coverNote'] ?? $_POST['coverLetter'] ?? '');
 
     if (empty($name) || empty($email) || !isset($_FILES['resume'])) {
@@ -94,8 +103,8 @@ if ($method === 'POST') {
 
     $relPath = '/api/uploads/resumes/' . $filename;
 
-    $stmt = $pdo->prepare("INSERT INTO applications (job_id, job_title, name, email, phone, resume_path, cover_note, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-    $stmt->execute([$jobId, $jobTitle, $name, $email, $phone, $relPath, $coverNote]);
+    $stmt = $pdo->prepare("INSERT INTO applications (job_id, job_title, name, email, phone, experience_years, resume_path, cover_note, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt->execute([$jobId, $jobTitle, $name, $email, $phone, $experienceYears, $relPath, $coverNote]);
 
     sendJSON(["message" => "Application submitted successfully"]);
 }

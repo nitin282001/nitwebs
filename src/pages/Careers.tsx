@@ -124,6 +124,26 @@ export default function Careers() {
                           {job.summary}
                         </p>
 
+                        {(job.experienceLevel || job.experience_level || (job.minExperience || job.min_experience) > 0 || job.salaryRange || job.salary_range) && (
+                          <div className="flex flex-wrap gap-2 text-xs font-sans mt-1">
+                            {(job.minExperience || job.min_experience) > 0 && (
+                              <span className="px-2.5 py-0.5 rounded-md bg-muted text-foreground font-medium text-[11px] border border-border/60">
+                                {job.minExperience || job.min_experience}+ Yrs Exp Required
+                              </span>
+                            )}
+                            {(job.experienceLevel || job.experience_level) && (
+                              <span className="px-2.5 py-0.5 rounded-md bg-muted text-foreground font-medium text-[11px] border border-border/60">
+                                {job.experienceLevel || job.experience_level}
+                              </span>
+                            )}
+                            {(job.salaryRange || job.salary_range) && (
+                              <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold text-[11px] border border-emerald-200/60 dark:border-emerald-800/40">
+                                {job.salaryRange || job.salary_range}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <div className="border-t border-border/60 pt-4 mt-2 flex flex-wrap gap-4 items-center justify-between text-xs text-secondary-text font-sans">
                           <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1.5">

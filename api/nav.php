@@ -6,11 +6,13 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 $defaultNav = [
     "links" => [
+        [ "label" => "Home", "type" => "page", "target" => "/" ],
         [ "label" => "Services", "type" => "scroll", "target" => "services" ],
         [ "label" => "About", "type" => "scroll", "target" => "about" ],
-        [ "label" => "Process", "type" => "scroll", "target" => "process" ],
-        [ "label" => "Careers", "type" => "page", "target" => "/careers" ],
-        [ "label" => "Contact", "type" => "scroll", "target" => "contact" ]
+        [ "label" => "Work", "type" => "scroll", "target" => "showcase" ],
+        [ "label" => "Industries", "type" => "scroll", "target" => "industries" ],
+        [ "label" => "Contact", "type" => "scroll", "target" => "contact" ],
+        [ "label" => "Careers", "type" => "page", "target" => "/careers" ]
     ],
     "ctaLabel" => "Get Started",
     "ctaType" => "scroll",

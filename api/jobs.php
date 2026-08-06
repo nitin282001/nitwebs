@@ -12,12 +12,27 @@ function ensureJobsTable($pdo) {
           `department` VARCHAR(100) DEFAULT '',
           `location` VARCHAR(100) DEFAULT 'Remote',
           `employment_type` VARCHAR(50) DEFAULT 'full-time',
+          `min_experience` INT DEFAULT 0,
+          `experience_level` VARCHAR(100) DEFAULT '',
+          `salary_range` VARCHAR(100) DEFAULT '',
           `summary` TEXT,
           `description` LONGTEXT,
           `requirements` LONGTEXT,
           `status` VARCHAR(50) DEFAULT 'open',
           `posted_date` DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $stmt = $pdo->query("SHOW COLUMNS FROM `jobs`");
+        $columns = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        if (!in_array('min_experience', $columns)) {
+            $pdo->exec("ALTER TABLE `jobs` ADD COLUMN `min_experience` INT DEFAULT 0");
+        }
+        if (!in_array('experience_level', $columns)) {
+            $pdo->exec("ALTER TABLE `jobs` ADD COLUMN `experience_level` VARCHAR(100) DEFAULT ''");
+        }
+        if (!in_array('salary_range', $columns)) {
+            $pdo->exec("ALTER TABLE `jobs` ADD COLUMN `salary_range` VARCHAR(100) DEFAULT ''");
+        }
     } catch (Exception $e) {}
 }
 ensureJobsTable($pdo);
@@ -28,6 +43,9 @@ function formatJobItem($job) {
     if (!$job) return null;
     $job['_id'] = (string)($job['id'] ?? '');
     $job['employmentType'] = $job['employment_type'] ?? 'full-time';
+    $job['minExperience'] = (int)($job['min_experience'] ?? 0);
+    $job['experienceLevel'] = $job['experience_level'] ?? '';
+    $job['salaryRange'] = $job['salary_range'] ?? '';
     $job['postedDate'] = $job['posted_date'] ?? date('c');
     $job['requirements'] = is_array($job['requirements']) ? $job['requirements'] : json_decode($job['requirements'] ?? '[]', true);
     return $job;
@@ -70,14 +88,17 @@ if ($method === 'POST') {
     $department = trim($input['department'] ?? '');
     $location = trim($input['location'] ?? 'Remote');
     $employmentType = trim($input['employmentType'] ?? 'full-time');
+    $minExperience = (int)($input['minExperience'] ?? $input['min_experience'] ?? 0);
+    $experienceLevel = trim($input['experienceLevel'] ?? $input['experience_level'] ?? '');
+    $salaryRange = trim($input['salaryRange'] ?? $input['salary_range'] ?? '');
     $summary = trim($input['summary'] ?? '');
     $description = trim($input['description'] ?? '');
     $requirements = json_encode($input['requirements'] ?? []);
     $status = trim($input['status'] ?? 'open');
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO jobs (title, slug, department, location, employment_type, summary, description, requirements, status, posted_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-        $stmt->execute([$title, $slug, $department, $location, $employmentType, $summary, $description, $requirements, $status]);
+        $stmt = $pdo->prepare("INSERT INTO jobs (title, slug, department, location, employment_type, min_experience, experience_level, salary_range, summary, description, requirements, status, posted_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([$title, $slug, $department, $location, $employmentType, $minExperience, $experienceLevel, $salaryRange, $summary, $description, $requirements, $status]);
         $id = $pdo->lastInsertId();
         sendJSON(["id" => $id, "message" => "Job created successfully"]);
     } catch (PDOException $e) {
@@ -91,7 +112,7 @@ if ($method === 'POST') {
 if ($method === 'PUT') {
     verifyAdminToken();
     $input = json_decode(file_get_contents('php://input'), true);
-    $id = $_GET['id'] ?? $input['id'] ?? null;
+    $id = $_GET['id'] ?? $input['id'] ?? $input['_id'] ?? null;
     if (!$id) sendJSON(["message" => "Job ID is required"], 400);
 
     $title = trim($input['title'] ?? '');
@@ -106,14 +127,17 @@ if ($method === 'PUT') {
     $department = trim($input['department'] ?? '');
     $location = trim($input['location'] ?? 'Remote');
     $employmentType = trim($input['employmentType'] ?? 'full-time');
+    $minExperience = (int)($input['minExperience'] ?? $input['min_experience'] ?? 0);
+    $experienceLevel = trim($input['experienceLevel'] ?? $input['experience_level'] ?? '');
+    $salaryRange = trim($input['salaryRange'] ?? $input['salary_range'] ?? '');
     $summary = trim($input['summary'] ?? '');
     $description = trim($input['description'] ?? '');
     $requirements = json_encode($input['requirements'] ?? []);
     $status = trim($input['status'] ?? 'open');
 
     try {
-        $stmt = $pdo->prepare("UPDATE jobs SET title = ?, slug = ?, department = ?, location = ?, employment_type = ?, summary = ?, description = ?, requirements = ?, status = ? WHERE id = ?");
-        $stmt->execute([$title, $slug, $department, $location, $employmentType, $summary, $description, $requirements, $status, $id]);
+        $stmt = $pdo->prepare("UPDATE jobs SET title = ?, slug = ?, department = ?, location = ?, employment_type = ?, min_experience = ?, experience_level = ?, salary_range = ?, summary = ?, description = ?, requirements = ?, status = ? WHERE id = ?");
+        $stmt->execute([$title, $slug, $department, $location, $employmentType, $minExperience, $experienceLevel, $salaryRange, $summary, $description, $requirements, $status, $id]);
         sendJSON(["message" => "Job updated successfully"]);
     } catch (PDOException $e) {
         if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062') !== false) {

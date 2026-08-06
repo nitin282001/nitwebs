@@ -40,6 +40,9 @@ CREATE TABLE IF NOT EXISTS `jobs` (
   `department` VARCHAR(100) DEFAULT '',
   `location` VARCHAR(100) DEFAULT 'Remote',
   `employment_type` VARCHAR(50) DEFAULT 'full-time',
+  `min_experience` INT DEFAULT 0,
+  `experience_level` VARCHAR(100) DEFAULT '',
+  `salary_range` VARCHAR(100) DEFAULT '',
   `summary` TEXT,
   `description` LONGTEXT,
   `requirements` LONGTEXT,
@@ -54,6 +57,7 @@ CREATE TABLE IF NOT EXISTS `applications` (
   `name` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
   `phone` VARCHAR(100) DEFAULT '',
+  `experience_years` INT DEFAULT 0,
   `resume_path` VARCHAR(500) NOT NULL,
   `cover_note` TEXT,
   `submitted_at` DATETIME DEFAULT CURRENT_TIMESTAMP
