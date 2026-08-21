@@ -94,8 +94,8 @@ $defaultContent = [
 ];
 
 if ($method === 'GET') {
-    header("Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=600");
-    $stmt = $pdo->query("SELECT data FROM site_content ORDER BY id ASC LIMIT 1");
+    header("Cache-Control: no-cache, no-store, must-revalidate");
+    $stmt = $pdo->query("SELECT data FROM site_content ORDER BY id DESC LIMIT 1");
     $row = $stmt->fetch();
     if ($row && !empty($row['data'])) {
         $decoded = json_decode($row['data'], true);
@@ -114,7 +114,7 @@ if ($method === 'POST' || $method === 'PUT') {
     }
     $json = json_encode($input, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     
-    $stmt = $pdo->query("SELECT id FROM site_content ORDER BY id ASC LIMIT 1");
+    $stmt = $pdo->query("SELECT id FROM site_content ORDER BY id DESC LIMIT 1");
     $existing = $stmt->fetch();
     
     if ($existing) {

@@ -20,7 +20,7 @@ $defaultNav = [
 ];
 
 if ($method === 'GET') {
-    $stmt = $pdo->query("SELECT data FROM navigation ORDER BY id ASC LIMIT 1");
+    $stmt = $pdo->query("SELECT data FROM navigation ORDER BY id DESC LIMIT 1");
     $row = $stmt->fetch();
     if ($row && !empty($row['data'])) {
         $decoded = json_decode($row['data'], true);
@@ -39,7 +39,7 @@ if ($method === 'POST' || $method === 'PUT') {
     }
     $json = json_encode($input, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     
-    $stmt = $pdo->query("SELECT id FROM navigation ORDER BY id ASC LIMIT 1");
+    $stmt = $pdo->query("SELECT id FROM navigation ORDER BY id DESC LIMIT 1");
     $existing = $stmt->fetch();
     
     if ($existing) {
