@@ -20,7 +20,6 @@ api/config.php
 docs/
 scratch/
 server/
-scripts/
 .env.local.example
 CMS_PLAN.md
 HOSTINGER_DEPLOYMENT.md
