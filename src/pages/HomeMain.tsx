@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, animate } from "motion/react";
 import type { AnimationPlaybackControls } from "motion/react";
-import { getApiUrl } from "../lib/api";
 import { updatePageSEO } from "../lib/seo";
 import type { IconType } from "react-icons";
 import { useIntroAnimation } from "../context/IntroContext";
@@ -392,21 +391,6 @@ export default function HomeMain({ siteData: initialSiteData }: HomeMainProps) {
     if (initialSiteData) {
       setSiteData(initialSiteData);
     }
-  }, [initialSiteData]);
-
-  useEffect(() => {
-    if (initialSiteData) return;
-    const loadContent = async () => {
-      try {
-        const res = await fetch(getApiUrl("/content"));
-        if (!res.ok) throw new Error("API content failed");
-        const data = await res.json();
-        setSiteData(data);
-      } catch (err) {
-        console.warn("API offline or content empty. Using static content fallbacks.");
-      }
-    };
-    loadContent();
   }, [initialSiteData]);
 
   useEffect(() => {

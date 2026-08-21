@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { IntroProvider } from "./context/IntroContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { SiteDataProvider } from "./context/SiteDataContext";
 import HomeMain from "./pages/HomeMain";
 import CustomCursor from "./components/CustomCursor";
 import ThemeToggle from "./components/ThemeToggle";
@@ -14,7 +15,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Careers = lazy(() => import("./pages/Careers"));
 const JobDetail = lazy(() => import("./pages/JobDetail"));
 
-export default function App() {
+function AppInner() {
   const { siteData } = useSiteData();
 
   const isUnderConstruction = siteData?.theme?.underConstruction === true;
@@ -56,5 +57,13 @@ export default function App() {
         </Suspense>
       </IntroProvider>
     </ThemeProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <SiteDataProvider>
+      <AppInner />
+    </SiteDataProvider>
   );
 }

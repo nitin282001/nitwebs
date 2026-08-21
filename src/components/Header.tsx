@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { getApiUrl } from "../lib/api";
+import { useSiteDataContext } from "../context/SiteDataContext";
 import { motion } from "motion/react";
 import NitwebsLogo from "./NitwebsLogo";
 import StaggeredMenu from "./StaggeredMenu";
@@ -66,6 +66,8 @@ export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: 
     { label: "GitHub", link: "https://github.com" }
   ]);
 
+  const { siteData, navData } = useSiteDataContext();
+
   useEffect(() => {
     if (propsLogoConfig) {
       setLogoConfig(propsLogoConfig);
@@ -73,50 +75,35 @@ export default function Header({ logoConfig: propsLogoConfig, scrollProgress }: 
   }, [propsLogoConfig, setLogoConfig]);
 
   useEffect(() => {
-    // Fetch dynamic nav links
-    fetch(getApiUrl("/nav"))
-      .then((res) => {
-        if (!res.ok) throw new Error("Navigation API offline");
-        return res.json();
-      })
-      .then((data) => {
-        if (data.links && data.links.length > 0) {
-          setLinks(data.links);
-          try {
-            localStorage.setItem("nitwebs_nav_links", JSON.stringify(data.links));
-          } catch (e) {}
-        }
-        if (data.ctaLabel) setCtaLabel(data.ctaLabel);
-        if (data.ctaType) setCtaType(data.ctaType);
-        if (data.ctaTarget) setCtaTarget(data.ctaTarget);
-      })
-      .catch((err) => {
-        console.warn("Navigation API offline, using fallback static navLinks:", err.message);
-      });
+    // Dynamic nav links, sourced from the shared SiteDataProvider fetch
+    if (!navData) return;
+    if (navData.links && navData.links.length > 0) {
+      setLinks(navData.links);
+      try {
+        localStorage.setItem("nitwebs_nav_links", JSON.stringify(navData.links));
+      } catch (e) {}
+    }
+    if (navData.ctaLabel) setCtaLabel(navData.ctaLabel);
+    if (navData.ctaType) setCtaType(navData.ctaType);
+    if (navData.ctaTarget) setCtaTarget(navData.ctaTarget);
+  }, [navData]);
 
-    // Fetch site content — single source for socials, logo config, theme toggle
-    fetch(getApiUrl("/content"))
-      .then((res) => {
-        if (!res.ok) throw new Error("Content API offline");
-        return res.json();
-      })
-      .then((data) => {
-        // Logo config
-        if (data?.logo) {
-          setLogoConfig(data.logo);
-        }
-        // Social Links admin panel → SiteContent.socialLinks is the single source of truth
-        if (data?.socialLinks && data.socialLinks.length > 0) {
-          setSocials(data.socialLinks.map((s: any) => ({
-            label: s.platform || "Social",
-            link: s.href || s.url || "#"
-          })));
-        }
-      })
-      .catch((err) => {
-        console.warn("Content API offline, defaulting theme toggle to visible:", err.message);
-      });
+  useEffect(() => {
+    // Site content — single source for socials, logo config, theme toggle
+    if (!siteData) return;
+    if (siteData.logo) {
+      setLogoConfig(siteData.logo);
+    }
+    // Social Links admin panel → SiteContent.socialLinks is the single source of truth
+    if (siteData.socialLinks && siteData.socialLinks.length > 0) {
+      setSocials(siteData.socialLinks.map((s: any) => ({
+        label: s.platform || "Social",
+        link: s.href || s.url || "#"
+      })));
+    }
+  }, [siteData, setLogoConfig]);
 
+  useEffect(() => {
     const handleScroll = () => {
       setHeaderSolid(window.scrollY > 40);
     };

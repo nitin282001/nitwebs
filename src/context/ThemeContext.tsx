@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { hexToHsl } from "../lib/utils";
-import { API_BASE } from "../lib/api";
+import { useSiteDataContext } from "./SiteDataContext";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -41,27 +41,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">(getSystemTheme);
 
   const resolvedTheme = theme === "system" ? systemTheme : theme;
+  const { siteData } = useSiteDataContext();
 
-  // Fetch backend primary color setting globally on app startup
+  // Apply the backend primary color setting once shared site data arrives —
+  // sourced from SiteDataProvider instead of its own /content fetch.
   useEffect(() => {
-    fetch(`${API_BASE}/content`)
-      .then((res) => {
-        if (!res.ok) throw new Error("API content failed");
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.theme?.primaryColor) {
-          const hsl = hexToHsl(data.theme.primaryColor);
-          if (hsl) {
-            document.documentElement.style.setProperty("--primary", `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-            document.documentElement.style.setProperty("--primary-tint", `${hsl.h} ${hsl.s}% ${Math.min(95, hsl.l + 32)}%`);
-          }
-        }
-      })
-      .catch(() => {
-        // Silently fall back to default CSS variable
-      });
-  }, []);
+    const primaryColor = siteData?.theme?.primaryColor;
+    if (!primaryColor) return;
+    const hsl = hexToHsl(primaryColor);
+    if (hsl) {
+      document.documentElement.style.setProperty("--primary", `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+      document.documentElement.style.setProperty("--primary-tint", `${hsl.h} ${hsl.s}% ${Math.min(95, hsl.l + 32)}%`);
+    }
+  }, [siteData]);
 
   // Track OS-level scheme changes so "System" stays live without a reload.
   useEffect(() => {

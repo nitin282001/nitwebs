@@ -1,10 +1,4 @@
 <?php
-if (file_exists(__DIR__ . '/config.php')) {
-    require_once __DIR__ . '/config.php';
-} else if (file_exists(__DIR__ . '/config.example.php')) {
-    require_once __DIR__ . '/config.example.php';
-}
-
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
@@ -13,6 +7,22 @@ header("Content-Type: application/json; charset=UTF-8");
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
     http_response_code(200);
     exit(0);
+}
+
+// Real credentials live OUTSIDE the git-deployed directory (one level above
+// public_html) so a redeploy can never delete or reset them. Local dev falls
+// back to api/config.php since there is no public_html split on a laptop.
+$externalConfig = __DIR__ . '/../../nitwebs_config.php';
+$localConfig = __DIR__ . '/config.php';
+
+if (file_exists($externalConfig)) {
+    require_once $externalConfig;
+} else if (file_exists($localConfig)) {
+    require_once $localConfig;
+} else {
+    http_response_code(500);
+    echo json_encode(["message" => "Server misconfiguration: database config not found. Contact site administrator."]);
+    exit;
 }
 
 function getDBConnection() {

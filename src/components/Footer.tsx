@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getApiUrl } from "../lib/api";
-import { 
+import { useSiteDataContext } from "../context/SiteDataContext";
+import {
   FaLinkedin, 
   FaTwitter, 
   FaXTwitter, 
@@ -117,59 +117,45 @@ export default function Footer({ logoConfig: propsLogoConfig }: FooterProps) {
   const effectiveLogoConfig = propsLogoConfig || contextLogoConfig;
   const [footerData, setFooterData] = useState<FooterData>(getInitialFooter);
   const navigate = useNavigate();
+  const { siteData, footerData: footerApiData } = useSiteDataContext();
 
   useEffect(() => {
-    // Fetch footer structure (columns, tagline, etc.)
-    fetch(getApiUrl("/footer"))
-      .then((res) => {
-        if (!res.ok) throw new Error("Footer API offline");
-        return res.json();
-      })
-      .then((data) => {
-        if (data && typeof data === "object") {
-          const merged: FooterData = {
-            tagline: data.tagline || DEFAULT_FOOTER.tagline,
-            columns: (Array.isArray(data.columns) && data.columns.length > 0) ? data.columns : DEFAULT_FOOTER.columns,
-            social: (Array.isArray(data.social) && data.social.length > 0) ? data.social : DEFAULT_FOOTER.social,
-            bottomLinks: (Array.isArray(data.bottomLinks) && data.bottomLinks.length > 0) ? data.bottomLinks : DEFAULT_FOOTER.bottomLinks,
-            platforms: Array.isArray(data.platforms) ? data.platforms : DEFAULT_FOOTER.platforms,
-            copyright: data.copyright || DEFAULT_FOOTER.copyright
-          };
-          setFooterData(merged);
-          try {
-            localStorage.setItem("nitwebs_footer_links", JSON.stringify(merged));
-          } catch (e) {}
-        }
-      })
-      .catch((err) => {
-        console.warn("Footer API offline, using fallback static footer defaults:", err.message);
-      });
+    // Footer structure (columns, tagline, etc.), sourced from the shared
+    // SiteDataProvider fetch instead of its own /footer request.
+    const data = footerApiData;
+    if (!data || typeof data !== "object") return;
+    const merged: FooterData = {
+      tagline: data.tagline || DEFAULT_FOOTER.tagline,
+      columns: (Array.isArray(data.columns) && data.columns.length > 0) ? data.columns : DEFAULT_FOOTER.columns,
+      social: (Array.isArray(data.social) && data.social.length > 0) ? data.social : DEFAULT_FOOTER.social,
+      bottomLinks: (Array.isArray(data.bottomLinks) && data.bottomLinks.length > 0) ? data.bottomLinks : DEFAULT_FOOTER.bottomLinks,
+      platforms: Array.isArray(data.platforms) ? data.platforms : DEFAULT_FOOTER.platforms,
+      copyright: data.copyright || DEFAULT_FOOTER.copyright
+    };
+    setFooterData(merged);
+    try {
+      localStorage.setItem("nitwebs_footer_links", JSON.stringify(merged));
+    } catch (e) {}
+  }, [footerApiData]);
 
-    // Override social links from the global /api/content socialLinks field if available
-    fetch(getApiUrl("/content"))
-      .then((res) => {
-        if (!res.ok) throw new Error("Content API offline");
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data.socialLinks) && data.socialLinks.length > 0) {
-          setFooterData((prev) => ({ 
-            ...prev, 
-            social: data.socialLinks.map((s: any) => ({
-              platform: s.platform || "Social",
-              href: s.href || s.url || "#",
-              icon: s.icon || s.platform
-            }))
-          }));
-        }
-        if (data?.logo) {
-          setLogoConfig(data.logo);
-        }
-      })
-      .catch(() => {
-        // Silently fall back to footer API social links
-      });
-  }, [setLogoConfig]);
+  useEffect(() => {
+    // Override social links / logo from the global site content, sourced
+    // from the shared SiteDataProvider fetch instead of its own request.
+    if (!siteData) return;
+    if (Array.isArray(siteData.socialLinks) && siteData.socialLinks.length > 0) {
+      setFooterData((prev) => ({
+        ...prev,
+        social: siteData.socialLinks.map((s: any) => ({
+          platform: s.platform || "Social",
+          href: s.href || s.url || "#",
+          icon: s.icon || s.platform
+        }))
+      }));
+    }
+    if (siteData.logo) {
+      setLogoConfig(siteData.logo);
+    }
+  }, [siteData, setLogoConfig]);
 
   const getSocialIcon = (iconName?: string, platform?: string) => {
     const key = (iconName || platform || "").toLowerCase();
